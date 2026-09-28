@@ -1,0 +1,32 @@
+# Node / Frontend
+node_modules/
+frontend/dist/
+frontend/node_modules/
+.npm/
+
+# Python / Backend
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+backend/.venv/
+
+# Database / Tools
+.tools/
+mongo_data/
+
+# OS / Environment
+.env
+.DS_Store
+Thumbs.db
+*.log
+
+# Heavy Data (Optional but recommended so you don't breach GitHub limits)
+*.npy
+*.nc
+*.pt
+backend/data/*.nc
+backend/app/ml/*.pt
