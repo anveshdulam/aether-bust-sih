@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply m-0 p-0 bg-bg-base text-text-primary;
+  }
+}
+
+.dark-map-tiles {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}
+
+.dark-map-tiles img {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}
