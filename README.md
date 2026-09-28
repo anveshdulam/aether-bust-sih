@@ -20,6 +20,7 @@
 ## 📖 Table of Contents
 - [The Problem](#-the-problem)
 - [Our Solution](#-our-solution)
+- [System Workflow](#-system-workflow)
 - [Key Features](#-key-features)
 - [System Architecture](#-system-architecture)
 - [Technology Stack](#-technology-stack)
@@ -36,7 +37,30 @@ When these models bust, disaster management agencies are caught completely off g
 ## 💡 Our Solution
 **AETHER-BUST** is a mission-critical, interactive operational console designed for meteorologists. Instead of building a new weather model from scratch, we use **Spatiotemporal Deep Learning** to predict *when, where, and why* the existing NWP models will fail 1 to 10 days in advance.
 
-By identifying high-risk failure zones early, agencies like the IMD (India Meteorological Department) and NDMA can manually intervene and issue targeted early warnings.
+---
+
+## 🔄 System Workflow
+
+The AETHER-BUST pipeline operates in four distinct, automated stages:
+
+```mermaid
+graph TD
+    A[1. Data Ingestion] -->|GFS / ECMWF Data| B(2. Spatiotemporal Model)
+    B -->|U-Net + ConvLSTM| C{3. Output Generation}
+    C -->|Bust Probability| D[4. Visualization & Alerts]
+    C -->|Expected Error| D
+    C -->|XAI Drivers| D
+    
+    style A fill:#1e40af,stroke:#60a5fa,stroke-width:2px,color:#fff
+    style B fill:#3730a3,stroke:#818cf8,stroke-width:2px,color:#fff
+    style C fill:#065f46,stroke:#34d399,stroke-width:2px,color:#fff
+    style D fill:#b91c1c,stroke:#f87171,stroke-width:2px,color:#fff
+```
+
+1. **Data Input & Preprocessing:** 10 meteorological channels across 10 forecast days are regridded, normalized, and spatiotemporally aligned into 5D Tensors.
+2. **Spatiotemporal Deep Learning:** The tensors are passed into our custom `BustNet` (U-Net + ConvLSTM with Temporal Attention) to learn spatial patterns and temporal evolution.
+3. **Output Generation:** The model mathematically extracts a 0-100 Bust Probability map, the Expected Error (magnitude of failure), and extracts the underlying meteorological drivers via XAI.
+4. **Visualization & Alerts:** The processed data is pushed to a WebGL React dashboard where meteorologists can interact with Day 1-10 layers, view Grad-CAM heatmaps, and issue high-risk early alerts.
 
 ---
 
