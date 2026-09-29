@@ -8,17 +8,39 @@ import { createRasterImage } from './gridUtils';
 
 
 
-const getConfidenceColor = (val: number): [number, number, number, number] => {
-  // Map 0 -> lowest confidence -> opaque red (#B8402F)
-  // Map 1 -> highest confidence -> transparent
-  if (val > 0.8) return [0, 0, 0, 0]; // Transparent
-  
-  if (val > 0.5) return [201, 154, 59, 64]; // Ochre (25%)
-  if (val > 0.2) return [208, 112, 47, 153]; // Orange (60%)
-  
-  return [184, 64, 47, 230]; // Brick (90%)
-};
+const turboColormap = [
+  [48, 18, 59], [62, 74, 137], [49, 104, 142], [38, 130, 142],
+  [31, 158, 137], [53, 183, 121], [109, 205, 89], [180, 222, 44],
+  [240, 229, 33], [253, 174, 97], [244, 109, 67], [213, 62, 79],
+  [158, 1, 66]
+];
 
+const getConfidenceColor = (val: number): [number, number, number, number] => {
+  // val is confidence (0=bad, 1=good). We want 0 to be red (end of turbo), 1 to be blue (start of turbo)
+  // Let's invert val so 0 is end and 1 is start. Or just map directly:
+  // Let's just do 0 -> red, 1 -> blue by using (1 - val)
+  const normalized = Math.max(0, Math.min(1, 1 - val));
+  
+  if (val > 0.8) return [0, 0, 0, 0]; // High confidence is transparent
+
+  const maxIdx = turboColormap.length - 1;
+  const exactIdx = normalized * maxIdx;
+  const idx1 = Math.floor(exactIdx);
+  const idx2 = Math.ceil(exactIdx);
+  const frac = exactIdx - idx1;
+
+  const c1 = turboColormap[idx1];
+  const c2 = turboColormap[idx2];
+
+  const r = c1[0] + (c2[0] - c1[0]) * frac;
+  const g = c1[1] + (c2[1] - c1[1]) * frac;
+  const b = c1[2] + (c2[2] - c1[2]) * frac;
+  
+  // Opacity: worse confidence (val=0) means higher opacity.
+  const a = val < 0.2 ? 220 : val < 0.5 ? 180 : 120;
+
+  return [r, g, b, a];
+};
 export const RiskMap = () => {
   const { runId, viewState, setViewState, setSelectedCell, activeRaster, opacity } = useAppStore();
   
@@ -37,13 +59,17 @@ export const RiskMap = () => {
       image: imageData,
       opacity: opacity,
       pickable: false,
+      textureParameters: {
+        10241: 9729, // GL.TEXTURE_MIN_FILTER = GL.LINEAR
+        10240: 9729, // GL.TEXTURE_MAG_FILTER = GL.LINEAR
+      }
     });
   }, [confidenceData, activeRaster, opacity]);
 
   const layers = [
     new TileLayer({
       id: 'basemap-tiles',
-      data: 'https://c.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png',
+      data: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
       minZoom: 0,
       maxZoom: 19,
       tileSize: 256,
@@ -59,7 +85,7 @@ export const RiskMap = () => {
     rasterLayer,
     new TileLayer({
       id: 'label-tiles',
-      data: 'https://c.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}.png',
+      data: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
       minZoom: 0,
       maxZoom: 19,
       tileSize: 256,
@@ -101,6 +127,8 @@ export const RiskMap = () => {
         onViewStateChange={({ viewState }) => setViewState(viewState as any)}
         controller={true}
         layers={layers}
+        minZoom={2}
+        maxZoom={12}
         onClick={(info) => {
           if (info.coordinate) {
             setSelectedCell([info.coordinate[1], info.coordinate[0]]);

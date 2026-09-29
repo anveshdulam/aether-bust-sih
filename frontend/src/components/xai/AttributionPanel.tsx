@@ -1,8 +1,10 @@
+import { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { useAttribution } from '../../api/queries';
 
 export const AttributionPanel = () => {
   const { runId, variable, leadTime, selectedCell } = useAppStore();
+  const [placeName, setPlaceName] = useState<string>('');
 
   const { data: attr, isLoading } = useAttribution(
     runId,
@@ -12,6 +14,33 @@ export const AttributionPanel = () => {
     selectedCell ? selectedCell[1] : 0,
     !!selectedCell
   );
+
+  useEffect(() => {
+    if (!attr) {
+      setPlaceName('');
+      return;
+    }
+    const fetchPlace = async () => {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${attr.lat}&lon=${attr.lon}&zoom=10`);
+        const data = await res.json();
+        if (data.address) {
+          const addr = data.address;
+          const place = addr.village || addr.suburb || addr.city_district || addr.city || addr.town || addr.county || addr.state_district || addr.state || 'Unknown Region';
+          
+          // Also try to get the state to give context like "Hyderabad, Telangana"
+          const region = (place !== addr.state && addr.state) ? addr.state : addr.country;
+          
+          setPlaceName(`${place}${region && place !== region ? `, ${region}` : ''}`);
+        } else {
+          setPlaceName('Unknown Region');
+        }
+      } catch (e) {
+        setPlaceName('Unknown Region');
+      }
+    };
+    fetchPlace();
+  }, [attr]);
 
   if (!selectedCell) {
     return (
@@ -48,7 +77,8 @@ export const AttributionPanel = () => {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <div className="text-ink-dim text-11">Location</div>
-            <div className="font-bold">{attr.lat.toFixed(2)}°N, {attr.lon.toFixed(2)}°E</div>
+            <div className="font-bold">{placeName ? placeName : 'Locating...'}</div>
+            <div className="text-11 text-ink-dim mt-0.5">{attr.lat.toFixed(2)}°N, {attr.lon.toFixed(2)}°E</div>
           </div>
           <div>
             <div className="text-ink-dim text-11">Target</div>
