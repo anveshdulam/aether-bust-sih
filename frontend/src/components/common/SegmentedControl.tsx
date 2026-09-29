@@ -17,8 +17,8 @@ export function SegmentedControl<T extends string>({ options, value, onChange, c
           className={cn(
             "flex-1 py-1.5 px-3 text-sm rounded-md transition-colors font-medium flex flex-col items-center justify-center",
             value === opt.value 
-              ? "bg-bg-elevated text-text-primary shadow-sm border border-border-strong" 
-              : "text-text-secondary hover:text-text-primary hover:bg-bg-panel border border-transparent"
+              ? "bg-panel text-ink border border-line-strong" 
+              : "text-ink-dim hover:text-ink hover:bg-panel border border-transparent"
           )}
         >
           <span>{opt.label}</span>

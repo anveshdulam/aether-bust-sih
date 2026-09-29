@@ -9,12 +9,6 @@ import '@fontsource/ibm-plex-mono/500.css';
 import './index.css';
 import App from './App';
 
-if (import.meta.env.VITE_USE_MOCKS === 'true') {
-  import('./api/mockAdapter').then(() => {
-    console.log('[MOCKS] API mocking enabled via VITE_USE_MOCKS');
-  });
-}
-
 const client = new QueryClient({
   defaultOptions: { queries: { staleTime: 5 * 60_000, retry: 1, refetchOnWindowFocus: false } },
 });

@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "tells": "node scripts/tells.mjs",
+    "prebuild": "npm run tells"
+  }
+}

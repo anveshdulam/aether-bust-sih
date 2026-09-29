@@ -28,5 +28,9 @@ Thumbs.db
 *.npy
 *.nc
 *.pt
+*.grib2
+*.grib2.*
 backend/data/*.nc
 backend/app/ml/*.pt
+backend/data_storage/
+backend/artifacts/
