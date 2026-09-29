@@ -42,30 +42,52 @@ Instead of building a new weather model from scratch, our objective is to develo
 
 **AETHER-BUST** is a mission-critical, interactive operational console designed for meteorologists. It acts as an intelligence layer on top of existing NWP outputs.
 
-        Raw GFS / ECMWF Data (10 Channels)
-                  │
-                  ▼
-        ┌───────────────────┐
-        │ 5D Tensor Builder │
-        └─────────┬─────────┘
-                  ▼
-        ┌───────────────────┐
-        │ BustNet Model     │
-        │ (U-Net+ConvLSTM)  │
-        └─────────┬─────────┘
-                  │
-        ┌─────────┴─────────┐
-        ▼                   ▼
-    Bust Probability    Expected Error
-        Map                 Magnitude
-                  │
-                  ▼
-        ┌───────────────────┐
-        │ Explainable AI    │
-        │ (Captum / IG)     │
-        └─────────┬─────────┘
-                  ▼
-        Meteorologist Dashboard (WebGL)
+```mermaid
+graph TD
+    %% Core Inputs
+    A1[(GFS Archive)] -->|GRIB2 / 0.25°| B
+    A2[(ECMWF ERA5)] -->|NetCDF / Reanalysis| B
+
+    %% Preprocessing
+    subgraph Data Pipeline
+        B[5D Tensor Materialization]
+        B -->|Regrid & Normalize| C(Spatiotemporal Tensors)
+    end
+
+    %% Model
+    subgraph Deep Learning Engine
+        C -->|Batch, Time, Channels, H, W| D{BustNet Model}
+        D -.->|Extract Spatial Features| D1(U-Net)
+        D -.->|Model Temporal Evolution| D2(ConvLSTM)
+    end
+
+    %% Outputs
+    subgraph Operational Outputs
+        D --> E1[Bust Probability Map]
+        D --> E2[Expected Error Magnitude]
+    end
+
+    %% XAI & UI
+    E1 --> F{Explainable AI}
+    E2 --> F
+    F -->|Integrated Gradients| G(WebGL Operational Dashboard)
+
+    %% Styling
+    style A1 fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#fff
+    style A2 fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#fff
+    style B fill:#1e3a8a,stroke:#60a5fa,stroke-width:2px,color:#fff
+    style C fill:#1e3a8a,stroke:#60a5fa,stroke-width:2px,color:#fff
+    
+    style D fill:#312e81,stroke:#818cf8,stroke-width:2px,color:#fff
+    style D1 fill:#4338ca,stroke:#a5b4fc,stroke-width:1px,color:#fff,stroke-dasharray: 5 5
+    style D2 fill:#4338ca,stroke:#a5b4fc,stroke-width:1px,color:#fff,stroke-dasharray: 5 5
+
+    style E1 fill:#064e3b,stroke:#34d399,stroke-width:2px,color:#fff
+    style E2 fill:#064e3b,stroke:#34d399,stroke-width:2px,color:#fff
+
+    style F fill:#7f1d1d,stroke:#f87171,stroke-width:2px,color:#fff
+    style G fill:#000000,stroke:#f59e0b,stroke-width:3px,color:#fff
+```
 
 ---
 
