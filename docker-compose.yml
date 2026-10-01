@@ -33,6 +33,9 @@ services:
       - .env
     environment:
       - MONGO_URI=mongodb://mongo:27017
+    volumes:
+      - tensor_data:/app/artifacts
+      - ./backend/app/ml/weights:/app/app/ml/weights:ro
     networks:
       - aether_net
     healthcheck:
@@ -58,6 +61,7 @@ services:
 
 volumes:
   mongo_data:
+  tensor_data:
 
 networks:
   aether_net:

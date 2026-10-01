@@ -34,3 +34,8 @@ backend/data/*.nc
 backend/app/ml/*.pt
 backend/data_storage/
 backend/artifacts/
+
+# Ignore local data processing folders
+data/
+backend/data_storage/
+backend/data/

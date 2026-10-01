@@ -5,6 +5,7 @@ import numpy as np
 
 # Ensure backend path is included
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend')))
+os.environ["TORCH_NUM_THREADS"] = "4"
 
 from app.ml.inference import InferenceRunner
 import torch
@@ -14,13 +15,13 @@ def run_stress_test():
     runner = InferenceRunner()
     
     # Generate dummy input tensor
-    X = torch.zeros(1, 10, 10, 128, 128, dtype=torch.float32)
+    X = np.zeros((1, 10, 10, 128, 128), dtype=np.float32)
     
     latencies = []
     
     for i in range(25):
         t0 = time.perf_counter()
-        _ = runner.run_inference(X)
+        _ = runner.run_tensor(X)
         t1 = time.perf_counter()
         latencies.append(t1 - t0)
         

@@ -3,8 +3,9 @@ import { useAppStore } from '../../store/useAppStore';
 export const LayerToggle = () => {
   const { activeRaster, setActiveRaster, opacity, setOpacity } = useAppStore();
 
-  const options: { id: 'confidence' | 'baseline' | 'error'; label: string }[] = [
+  const options: { id: 'confidence' | 'baseline' | 'error' | 'p_bust'; label: string }[] = [
     { id: 'confidence', label: 'BustNet Confidence' },
+    { id: 'p_bust', label: 'Bust Probability Risk' },
     { id: 'baseline', label: 'Baseline Err' },
     { id: 'error', label: 'Predicted Err' }
   ];

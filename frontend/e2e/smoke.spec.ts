@@ -11,7 +11,7 @@ test.describe('AETHER-BUST Operational Console Smoke Test', () => {
     await expect(page.locator('text=AETHER-BUST')).toBeVisible();
 
     // Map container (RiskMap renders relative wrapper)
-    const mapContainer = page.locator('.relative.w-full.h-full.flex.flex-col');
+    const mapContainer = page.locator('.w-full.h-full.relative.bg-inset.overflow-hidden');
     await expect(mapContainer).toBeVisible();
 
     // Control rails
@@ -25,7 +25,7 @@ test.describe('AETHER-BUST Operational Console Smoke Test', () => {
   });
 
   test('UX-3: Scrubber interaction updates lead time', async ({ page }) => {
-    const scrubber = page.locator('input[type="range"]').last();
+    const scrubber = page.locator('#scrubber');
     await expect(scrubber).toBeVisible();
     await scrubber.fill('5');
     

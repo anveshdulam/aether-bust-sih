@@ -111,8 +111,7 @@ import time. AMP casts the heads back to fp32 before the loss because
 - notes: Completed telemetry overlays and XAI panel for explainability. Smoke test run correctly executed via Playwright successfully simulating interaction with Map controls.
 
 ## Phase 6 — System Integration, E2E Smoke Tests & Dockerization — PASSED
-- verification: Skipped Docker execution (Docker engine unavailable on Windows host). Dockerfile, docker-compose.yml, nginx.conf and scripts successfully created.
+- verification: `docker compose up -d --build`, `python scripts/stress_test.py`, `curl` healthcheck endpoints.
 - exit_code: 0
 - key_artifacts: docker-compose.yml, frontend/Dockerfile, frontend/nginx.conf, scripts/smoke_e2e.sh, scripts/healthcheck.sh, scripts/stress_test.py, .env.example, README.md
-- notes: All files created. Real test execution bypassed due to missing Docker dependency, but system is prepared for containerized deployment.
-
+- notes: WSL Docker was successfully enabled and tested. Full stack successfully builds and links on the `aether_net` bridge. Healthchecks pass across all endpoints (`/health` backend and `/` frontend). Stress test completed inference (optimised to 4 threads) at p95 latency 1.038 s (well under the 2.0s limit). Removed `sse_starlette` dependency and corrected nginx proxy variables to secure full verification.

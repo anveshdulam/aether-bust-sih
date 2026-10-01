@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useConsoleStore } from '../store/useConsoleStore';
+import { useAppStore } from '../store/useAppStore';
 import { useHealth, useRuns } from '../api/queries';
 import { StatusDot } from '../components/common/StatusDot';
 import { Pill } from '../components/common/Pill';
@@ -18,7 +18,7 @@ export const TopBar: React.FC = () => {
 
   const { data: health } = useHealth();
   const { data: runs } = useRuns();
-  const { runId, setRunId } = useConsoleStore();
+  const { runId, setRunId } = useAppStore();
 
   const activeRun = runs?.find(r => r.run_id === runId);
   

@@ -6,6 +6,7 @@ from app.routers import (
     forecast_runs,
     health,
     telemetry,
+    live,
 )
 
 # Routers mounted under /api/v1 by the app factory, in catalogue order (TRD 5.2).
@@ -16,6 +17,7 @@ API_ROUTERS = (
     attribution.router,
     export.router,
     telemetry.router,
+    live.router,
 )
 
 # Mounted at the app root.

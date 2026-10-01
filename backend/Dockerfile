@@ -7,13 +7,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# libexpat/libgomp/curl are needed by netCDF4, torch and the compose healthcheck.
+# libeccodes is required for cfgrib to read GRIB2 files
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl libexpat1 libgomp1 \
+    && apt-get install -y --no-install-recommends curl libexpat1 libgomp1 libeccodes-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt ./
-RUN pip install --upgrade pip && pip install -r requirements.txt
+RUN pip install --upgrade pip && pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
 
 COPY app ./app
 COPY data ./data

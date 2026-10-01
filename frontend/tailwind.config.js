@@ -2,28 +2,27 @@
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
-    // Set at theme level (not extend) so these utilities do not exist.
-    boxShadow: {},
-    backdropBlur: {},
-    dropShadow: {},
-    borderRadius: { none: '0', DEFAULT: '2px', sm: '2px', md: '3px', full: '9999px' },
     extend: {
       fontFamily: {
-        sans: ['"IBM Plex Sans"', 'system-ui', 'sans-serif'],
-        mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
+        sans: ['"Inter"', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
       },
       colors: {
-        base: '#0B1220',
-        panel: '#121C2E',
-        inset: '#0E1626',
-        line: '#1F2A3D',
-        'line-strong': '#2C3A52',
-        ink: { DEFAULT: '#D9E0EA', dim: '#9AA6B8', faint: '#7A879C' },
-        accent: '#2F81F7',
-        status: { ok: '#2EA043', warn: '#D29922', crit: '#F85149' },
+        bg: { base: '#0B1220', panel: '#121C2E', elevated: '#1A2740', inset: '#0E1626' },
+        border: { subtle: '#233049', strong: '#33507A' },
+        text: { primary: '#E6EDF7', secondary: '#9FB0C9', muted: '#5F7291' },
+        accent: { primary: '#2F81F7', focus: '#58A6FF' },
+        status: { ok: '#2EA043', warn: '#D29922', crit: '#F85149', info: '#388BFD' },
       },
-      keyframes: { fade: { '0%,100%': { opacity: '1' }, '50%': { opacity: '0.45' } } },
-      animation: { fade: 'fade 1.4s ease-in-out infinite' },
+      borderRadius: {
+        md: '6px',
+        lg: '10px',
+        xl: '14px',
+      },
+      boxShadow: {
+        panel: '0 2px 8px rgba(0,0,0,0.45)',
+        pop: '0 8px 24px rgba(0,0,0,0.55)',
+      },
     },
   },
   plugins: [],

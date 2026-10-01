@@ -9,11 +9,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from asgi_correlation_id import CorrelationIdMiddleware
 from app.config import Settings, get_settings
 from app.db import client as db_client
 from app.db.indexes import ensure_schema
 from app.routers import API_ROUTERS, ROOT_ROUTERS
 from app.services.run_service import RunService
+from app.logging import setup_logging
+
+setup_logging()
 
 API_PREFIX = "/api/v1"
 PROBLEM_JSON = "application/problem+json"
@@ -75,6 +79,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = settings
+
+    import uuid
+    from starlette.middleware.base import BaseHTTPMiddleware
+    from app.logging import correlation_id
+
+    class CustomCorrelationIdMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request: Request, call_next):
+            req_id = request.headers.get("X-Request-ID", uuid.uuid4().hex)
+            correlation_id.set(req_id)
+            response = await call_next(request)
+            response.headers["X-Request-ID"] = req_id
+            return response
+
+    app.add_middleware(CustomCorrelationIdMiddleware)
 
     app.add_middleware(
         CORSMiddleware,

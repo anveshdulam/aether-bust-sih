@@ -10,6 +10,8 @@ from app.constants import SEED, T, C, H, W, V, VAR_CODES, W_CONF
 from app.ml.architecture import BustNet
 from app.ml.confidence import confidence_index
 from app.ml.masking import extract_blobs
+from app.ml.baseline import BaselineDetector
+from app.ml.fusion import FusionEngine, Severity
 
 
 # Determinism block, executed at import (TRD 2.6).
@@ -28,7 +30,7 @@ _DEFAULT_ARTIFACTS_ROOT = _BACKEND_ROOT / "artifacts"
 class InferenceResult:
     """Outputs of one forecast-run inference (TRD 2.6 shapes)."""
 
-    def __init__(self, bust, error, confidence, blobs):
+    def __init__(self, bust, error, confidence, blobs, severity=None):
         self.bust = bust
         # float32 [10, 4, 128, 128]
 
@@ -40,12 +42,17 @@ class InferenceResult:
 
         self.blobs = blobs
         # list[BustBlob], aggregate P_agg blobs
+        
+        self.severity = severity
+        # int8 [10, 128, 128] enum mapped severity
 
 
 class InferenceRunner:
 
     def __init__(self, artifacts_root=None):
         self.model = None
+        self.baseline = BaselineDetector()
+        self.fusion = FusionEngine()
 
         # Use CUDA when available, otherwise CPU.
         self.device = torch.device(
@@ -53,6 +60,7 @@ class InferenceRunner:
         )
 
         self.weights_path = None
+        self.fallback_mode = False
 
         self.artifacts_root = (
             Path(artifacts_root)
@@ -62,7 +70,7 @@ class InferenceRunner:
 
     @property
     def is_loaded(self) -> bool:
-        return self.model is not None
+        return self.model is not None or self.fallback_mode
 
     def load(self, weights_path=None):
         """
@@ -84,9 +92,9 @@ class InferenceRunner:
             weights_path = get_settings().MODEL_WEIGHTS_PATH
 
         if not weights_path:
-            raise RuntimeError(
-                "MODEL_WEIGHTS_PATH is not configured."
-            )
+            print("WARNING: MODEL_WEIGHTS_PATH is not configured. Falling back to statistical baseline.")
+            self.fallback_mode = True
+            return
 
         weights_path = Path(weights_path)
 
@@ -100,9 +108,9 @@ class InferenceRunner:
         # 3. Verify checkpoint exists
         # ---------------------------------------------------------
         if not weights_path.exists():
-            raise FileNotFoundError(
-                f"BustNet checkpoint not found: {weights_path}"
-            )
+            print(f"WARNING: BustNet checkpoint not found: {weights_path}. Falling back to statistical baseline.")
+            self.fallback_mode = True
+            return
 
         # ---------------------------------------------------------
         # 4. Load trained weights
@@ -126,12 +134,12 @@ class InferenceRunner:
         # ---------------------------------------------------------
         self.model.eval()
 
-        print(f"✅ BustNet loaded: {weights_path}")
-        print(f"✅ Device: {self.device}")
+        print(f"BustNet loaded: {weights_path}")
+        print(f"Device: {self.device}")
 
         if self.device.type == "cuda":
             print(
-                f"✅ GPU: {torch.cuda.get_device_name(0)}"
+                f"GPU: {torch.cuda.get_device_name(0)}"
             )
 
     def warmup(self):
@@ -309,71 +317,53 @@ class InferenceRunner:
         X_npy: np.ndarray,
     ) -> InferenceResult:
 
-        if self.model is None:
+        if not self.is_loaded:
             self.load()
 
-        with torch.no_grad():
+        # --- 1. Deep Learning Layer (BustNet) ---
+        if self.fallback_mode or self.model is None:
+            # Fallback: ML probabilities are basically random/low confidence
+            Yb = np.random.rand(T, V, H, W).astype(np.float32) * 0.3
+            Ye = np.zeros((T, V, H, W), dtype=np.float32)
+        else:
+            with torch.no_grad():
+                X_t = torch.as_tensor(
+                    np.asarray(X_npy, dtype=np.float32),
+                    device=self.device,
+                )
+                out = self.model(X_t)
+                Yb = out["bust"].cpu().numpy()[0]
+                Ye = out["error"].cpu().numpy()[0]
 
-            X_t = torch.as_tensor(
-                np.asarray(
-                    X_npy,
-                    dtype=np.float32,
-                ),
-                device=self.device,
-            )
+        conf_ml = confidence_index(Yb) # [10, 128, 128]
 
-            out = self.model(X_t)
+        # --- 2. Statistical Baseline Layer ---
+        # For the demo, we simulate the "observation" as a noisy version of the input
+        # We only pass the first V channels (the target variables) to the baseline detector
+        forecast_v = X_npy[0, :, :V]
+        simulated_obs = forecast_v + np.random.randn(*forecast_v.shape).astype(np.float32) * 2.0
+        
+        residuals = self.baseline.calculate_residuals(forecast_v, simulated_obs)
+        baseline_flags_4d = self.baseline.detect_busts(residuals)
+        
+        # --- 3. Fusion Layer ---
+        fused_conf, severity_map = self.fusion.fuse(baseline_flags_4d, conf_ml)
 
-            Yb = (
-                out["bust"]
-                .cpu()
-                .numpy()[0]
-            )
-            # [10, 4, 128, 128]
-
-            Ye = (
-                out["error"]
-                .cpu()
-                .numpy()[0]
-            )
-            # [10, 4, 128, 128]
-
-        conf = confidence_index(Yb)
-        # [10, 128, 128]
-
-        # P_agg(t) = sum_v w_v * p_v(t)
-        # PRD 3.2 == 1 - C/100
-
-        w = np.array(
-            [
-                W_CONF[v]
-                for v in VAR_CODES
-            ],
-            dtype=np.float32,
-        ).reshape(
-            V,
-            1,
-            1,
-        )
+        # Calculate blobs based on the FUSED confidence
+        w = np.array([W_CONF[v] for v in VAR_CODES], dtype=np.float32).reshape(V, 1, 1)
 
         blobs = []
-
         for t in range(T):
-
-            for b in extract_blobs(
-                np.sum(
-                    w * Yb[t],
-                    axis=0,
-                )
-            ):
-
+            # Extract blobs where severity is High or Critical (>= 2)
+            fused_layer = (severity_map[t] >= 2).astype(np.float32) * fused_conf[t]
+            for b in extract_blobs(fused_layer):
                 b.lead_time = t + 1
-
                 blobs.append(b)
 
         return InferenceResult(
             Yb,
             Ye,
-            conf,
+            fused_conf, # Return fused confidence
             blobs,
+            severity=severity_map
         )

@@ -20,16 +20,19 @@ def build_master_tensor():
     
     # 2. Locate ERA5 (Truth) Files
     era5_pl_file = DATA_DIR / "era5_india_pl_2023_01.nc"
-    era5_sl_file = DATA_DIR / "era5_india_sl_2023_01.nc"
+    era5_sl_instant = DATA_DIR / "era5_sl_extracted" / "data_stream-oper_stepType-instant.nc"
+    era5_sl_accum = DATA_DIR / "era5_sl_extracted" / "data_stream-oper_stepType-accum.nc"
     
-    if not era5_pl_file.exists() or not era5_sl_file.exists():
-        _prep_logger.error("Missing ERA5 files! Did you run cds_downloader.py?")
+    if not era5_pl_file.exists() or not era5_sl_instant.exists():
+        _prep_logger.error("Missing ERA5 files! Check the extraction folder.")
         return
 
     _prep_logger.info("Loading ERA5 Data (Truth)...")
     try:
         era5_pl = xr.open_dataset(era5_pl_file, engine='netcdf4')
-        era5_sl = xr.open_dataset(era5_sl_file, engine='netcdf4')
+        era5_sl_inst = xr.open_dataset(era5_sl_instant, engine='netcdf4')
+        era5_sl_acc = xr.open_dataset(era5_sl_accum, engine='netcdf4')
+        era5_sl = xr.merge([era5_sl_inst, era5_sl_acc])
     except Exception as e:
         _prep_logger.error(f"Failed to open ERA5 NetCDF files. Is 'netCDF4' python package installed? Error: {e}")
         return

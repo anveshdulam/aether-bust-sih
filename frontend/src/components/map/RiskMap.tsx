@@ -5,8 +5,8 @@ import { BitmapLayer, PathLayer } from '@deck.gl/layers';
 import { useAppStore } from '../../store/useAppStore';
 import { useConfidenceMap } from '../../api/queries';
 import { createRasterImage } from './gridUtils';
-
-
+import { ScrubberBar } from './ScrubberBar';
+import { useBustPolygonLayer } from './useBustPolygonLayer';
 
 const turboColormap = [
   [48, 18, 59], [62, 74, 137], [49, 104, 142], [38, 130, 142],
@@ -16,12 +16,9 @@ const turboColormap = [
 ];
 
 const getConfidenceColor = (val: number): [number, number, number, number] => {
-  // val is confidence (0=bad, 1=good). We want 0 to be red (end of turbo), 1 to be blue (start of turbo)
-  // Let's invert val so 0 is end and 1 is start. Or just map directly:
-  // Let's just do 0 -> red, 1 -> blue by using (1 - val)
   const normalized = Math.max(0, Math.min(1, 1 - val));
   
-  if (val > 0.8) return [0, 0, 0, 0]; // High confidence is transparent
+  if (val > 0.8) return [0, 0, 0, 0];
 
   const maxIdx = turboColormap.length - 1;
   const exactIdx = normalized * maxIdx;
@@ -36,16 +33,16 @@ const getConfidenceColor = (val: number): [number, number, number, number] => {
   const g = c1[1] + (c2[1] - c1[1]) * frac;
   const b = c1[2] + (c2[2] - c1[2]) * frac;
   
-  // Opacity: worse confidence (val=0) means higher opacity.
   const a = val < 0.2 ? 220 : val < 0.5 ? 180 : 120;
 
   return [r, g, b, a];
 };
+
 export const RiskMap = () => {
   const { runId, viewState, setViewState, setSelectedCell, activeRaster, opacity } = useAppStore();
   
-  // Hardcode leadtime 1 for now
   const { data: confidenceData } = useConfidenceMap(runId, 1);
+  const bustLayer = useBustPolygonLayer();
 
   const rasterLayer = useMemo(() => {
     if (!confidenceData || activeRaster !== 'confidence') return null;
@@ -60,8 +57,8 @@ export const RiskMap = () => {
       opacity: opacity,
       pickable: false,
       textureParameters: {
-        10241: 9729, // GL.TEXTURE_MIN_FILTER = GL.LINEAR
-        10240: 9729, // GL.TEXTURE_MAG_FILTER = GL.LINEAR
+        10241: 9729,
+        10240: 9729,
       }
     });
   }, [confidenceData, activeRaster, opacity]);
@@ -83,6 +80,7 @@ export const RiskMap = () => {
       }
     }),
     rasterLayer,
+    bustLayer,
     new TileLayer({
       id: 'label-tiles',
       data: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
@@ -102,11 +100,9 @@ export const RiskMap = () => {
       id: 'graticule',
       data: (() => {
         const lines = [];
-        // Latitudes (every 5 degrees)
         for (let lat = 10; lat <= 35; lat += 5) {
           lines.push({ path: [[68.0, lat], [99.75, lat]] });
         }
-        // Longitudes (every 5 degrees)
         for (let lon = 70; lon <= 95; lon += 5) {
           lines.push({ path: [[lon, 6.0], [lon, 37.75]] });
         }
@@ -115,7 +111,7 @@ export const RiskMap = () => {
       pickable: false,
       widthScale: 1,
       widthMinPixels: 1,
-      getColor: [217, 224, 234, 30], // ink with low opacity
+      getColor: [217, 224, 234, 30],
       getPath: d => d.path
     }),
   ].filter(Boolean);
@@ -126,20 +122,21 @@ export const RiskMap = () => {
         viewState={viewState}
         onViewStateChange={({ viewState }) => setViewState(viewState as any)}
         controller={true}
-        layers={layers}
-        minZoom={2}
-        maxZoom={12}
+        layers={layers as any[]}
         onClick={(info) => {
           if (info.coordinate) {
             setSelectedCell([info.coordinate[1], info.coordinate[0]]);
           }
         }}
+        getCursor={({ isHovering }) => isHovering ? 'pointer' : 'crosshair'}
       />
       <div className="absolute bottom-4 left-4 bg-panel border border-line p-2 font-mono text-11 text-ink flex gap-4 pointer-events-none">
         <span>{viewState.latitude.toFixed(2)}°N {viewState.longitude.toFixed(2)}°E</span>
         <span>zoom: {viewState.zoom.toFixed(1)}</span>
         <span>layer: {activeRaster}</span>
       </div>
+      <ScrubberBar />
     </div>
   );
 };
+

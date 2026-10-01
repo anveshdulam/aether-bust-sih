@@ -1,17 +1,17 @@
 import { useState } from 'react';
-import { useAppStore } from '../../store/useAppStore';
+import { useConsoleStore } from '../../store/useConsoleStore';
 
 const API_BASE = 'http://localhost:8000/api/v1';
 
 export const ExportPanel = () => {
-  const { runId, activeVariable, leadTime } = useAppStore();
+  const { runId, variable, leadTime } = useConsoleStore();
   const [downloading, setDownloading] = useState<string | null>(null);
 
   const handleDownload = async (layer: 'p_bust' | 'expected_error' | 'confidence', format: 'geojson' | 'geotiff' | 'netcdf') => {
     if (!runId) return;
     
     // Construct export URL
-    const url = `${API_BASE}/export?run_id=${runId}&variable=${activeVariable}&layer=${layer}&lead_time=${leadTime}&format=${format}`;
+    const url = `${API_BASE}/export?run_id=${runId}&variable=${variable}&layer=${layer}&lead_time=${leadTime}&format=${format}`;
     
     try {
       setDownloading(`${layer}-${format}`);
