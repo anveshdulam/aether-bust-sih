@@ -11,13 +11,14 @@ import sys
 backend_path = str(Path(__file__).resolve().parents[2] / "backend")
 if backend_path not in sys.path:
     sys.path.append(backend_path)
+sys.path.append(str(Path(__file__).resolve().parent))
 
 from app.constants import (
     VAR_CODES, CHANNEL_CODES, TAU,
     PHI_MIN, PHI_MAX, LAMBDA_MIN, LAMBDA_MAX,
     H, W, T, C, V
 )
-from scripts.training.gfs_era5_builder import get_gfs_24h_precip, get_era5_24h_precip, extract_field
+from gfs_era5_builder import get_gfs_24h_precip, get_era5_24h_precip, extract_field
 
 def run_real_data_gate(init_date: datetime.datetime, gfs_dir: Path, era5_dir: Path):
     print("============================================================")
