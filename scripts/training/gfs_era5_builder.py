@@ -149,13 +149,21 @@ def get_gfs_24h_precip(init_date: datetime.datetime, target_lead: int, gfs_dir: 
         
     return tp_24h, interval_str, tp_24h.mean().values
 
-def extract_field(ds, var_name, level=None):
-    if var_name not in ds: raise KeyError(f"Missing {var_name}")
-    da = ds[var_name]
-    if level:
-        dim = [d for d in da.dims if 'isobaric' in d.lower() or 'level' in d.lower()][0]
-        da = da.sel({dim: level}, method='nearest')
-    return da
+def extract_field(datasets, var_name, level=None):
+    if not isinstance(datasets, list):
+        datasets = [datasets]
+        
+    for ds in datasets:
+        if var_name in ds:
+            da = ds[var_name]
+            if level:
+                dim = [d for d in da.dims if 'isobaric' in d.lower() or 'level' in d.lower()]
+                if not dim:
+                    continue
+                da = da.sel({dim[0]: level}, method='nearest')
+            return da
+            
+    raise KeyError(f"Missing {var_name}")
 
 def process_initialization(init_date: datetime.datetime, gfs_dir: Path, era5_dir: Path, out_dir: Path):
     x_sequence = np.zeros((T, C, H, W), dtype=np.float32)
@@ -175,8 +183,9 @@ def process_initialization(init_date: datetime.datetime, gfs_dir: Path, era5_dir
         # 1. GFS Processing (including dynamic 24h precipitation)
         gfs_tp_24h, gfs_tp_interval, gfs_tp_mean = get_gfs_24h_precip(init_date, target_lead, gfs_dir)
         
-        gfs_file = gfs_dir / f"gfs_{init_date.strftime('%Y%m%d')}_12z_f{target_lead:03d}.nc"
-        ds_gfs = xr.open_dataset(gfs_file)
+        gfs_file = gfs_dir / f"gfs_india_{init_date.strftime('%Y%m%d')}_12z_f{target_lead:03d}.grib2"
+        import cfgrib
+        ds_gfs = cfgrib.open_datasets(str(gfs_file), backend_kwargs={'indexpath': ''})
         
         t2m = extract_field(ds_gfs, "t2m")
         z500 = extract_field(ds_gfs, "gh", 500)
@@ -185,7 +194,12 @@ def process_initialization(init_date: datetime.datetime, gfs_dir: Path, era5_dir
         u250 = extract_field(ds_gfs, "u", 250)
         v250 = extract_field(ds_gfs, "v", 250)
         cape = extract_field(ds_gfs, "cape")
-        mslp = extract_field(ds_gfs, "msl")
+        
+        # Mean sea level pressure can be msl or prmsl
+        try:
+            mslp = extract_field(ds_gfs, "msl")
+        except KeyError:
+            mslp = extract_field(ds_gfs, "prmsl")
         
         ws850 = np.sqrt(u850**2 + v850**2)
         shear = np.sqrt((u250 - u850)**2 + (v250 - v850)**2)
