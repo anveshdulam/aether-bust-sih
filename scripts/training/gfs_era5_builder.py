@@ -166,7 +166,12 @@ def process_initialization(init_date: datetime.datetime, gfs_dir: Path, era5_dir
     yb_sequence = np.zeros((T, V, H, W), dtype=np.float32)
     ye_sequence = np.zeros((T, V, H, W), dtype=np.float32)
     
-    with open(Path(backend_path) / "app" / "ml" / "norm_stats.json", "r") as f:
+    norm_stats_path = Path(backend_path) / "app" / "ml" / "norm_stats.json"
+    if not norm_stats_path.exists():
+        from data.generator import write_norm_stats
+        write_norm_stats(str(norm_stats_path))
+        
+    with open(norm_stats_path, "r") as f:
         norm_stats = json.load(f)
     mu, sigma = np.array(norm_stats["MU"], dtype=np.float32), np.array(norm_stats["SIGMA"], dtype=np.float32)
     
@@ -202,7 +207,18 @@ def process_initialization(init_date: datetime.datetime, gfs_dir: Path, era5_dir
         mslp_hpa = mslp / 100.0 if mslp.mean() > 2000 else mslp
         z500_anom = z500 - mu[2]
         
-        channels = [t2m, gfs_tp_24h, z500, u850, v850, ws850, cape, mslp_hpa, z500_anom, shear]
+        raw_channels = [t2m, gfs_tp_24h, z500, u850, v850, ws850, cape, mslp_hpa, z500_anom, shear]
+        
+        # Slice down to India bounding box (PHI_MAX to PHI_MIN, LAMBDA_MIN to LAMBDA_MAX)
+        # Note: GFS latitudes are typically descending (90 to -90), so slice(PHI_MAX, PHI_MIN)
+        channels = []
+        for da in raw_channels:
+            if "latitude" in da.dims and "longitude" in da.dims:
+                # Standardize longitude to 0-360 if necessary (GFS is usually 0-360)
+                da_sliced = da.sel(latitude=slice(PHI_MAX, PHI_MIN), longitude=slice(LAMBDA_MIN, LAMBDA_MAX))
+                channels.append(da_sliced)
+            else:
+                channels.append(da)
         for ci in range(C):
             x_sequence[lead_idx, ci] = channels[ci].values
             
@@ -217,7 +233,16 @@ def process_initialization(init_date: datetime.datetime, gfs_dir: Path, era5_dir
         era_v850 = extract_field(ds_era5, "v", 850)
         era_ws850 = np.sqrt(era_u850**2 + era_v850**2)
         
-        era_targets = [era_t2m, era5_tp_24h, era_z500, era_ws850]
+        era_targets_raw = [era_t2m, era5_tp_24h, era_z500, era_ws850]
+        
+        era_targets = []
+        for da in era_targets_raw:
+            if "latitude" in da.dims and "longitude" in da.dims:
+                # ERA5 latitudes are typically descending (90 to -90), so slice(PHI_MAX, PHI_MIN)
+                da_sliced = da.sel(latitude=slice(PHI_MAX, PHI_MIN), longitude=slice(LAMBDA_MIN, LAMBDA_MAX))
+                era_targets.append(da_sliced)
+            else:
+                era_targets.append(da)
         
         # 3. Target Generation
         for vi, code in enumerate(VAR_CODES):
