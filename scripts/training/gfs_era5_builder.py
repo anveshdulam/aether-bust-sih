@@ -57,7 +57,14 @@ def get_gfs_24h_precip(init_date: datetime.datetime, target_lead: int, gfs_dir: 
     if not target_file.exists():
         raise FileNotFoundError(f"Missing GFS {target_file.name}")
         
-    ds_target = xr.open_dataset(target_file, engine="cfgrib")
+    ds_target = xr.open_dataset(
+        target_file, 
+        engine="cfgrib", 
+        backend_kwargs={
+            "filter_by_keys": {"typeOfLevel": "surface", "stepType": "accum"},
+            "indexpath": ""
+        }
+    )
     if 'tp' not in ds_target:
         return ds_target['t2m'] * 0.0, "Missing tp", 0.0  # Fallback zero if no precip in model
         
@@ -80,7 +87,14 @@ def get_gfs_24h_precip(init_date: datetime.datetime, target_lead: int, gfs_dir: 
             f_path = gfs_dir / f"gfs_india_{init_date.strftime('%Y%m%d')}_12z_f{lead:03d}.grib2"
             if not f_path.exists():
                 raise FileNotFoundError(f"Missing intermediate GFS for 6h bucket sum: {f_path.name}")
-            ds_int = xr.open_dataset(f_path, engine="cfgrib")
+            ds_int = xr.open_dataset(
+                f_path, 
+                engine="cfgrib",
+                backend_kwargs={
+                    "filter_by_keys": {"typeOfLevel": "surface", "stepType": "accum"},
+                    "indexpath": ""
+                }
+            )
             tp_24h = tp_24h + ds_int['tp']
             bucket_strs.append(ds_int['tp'].attrs.get('GRIB_stepRange', f"{lead-6}-{lead}"))
             ds_int.close()
@@ -91,7 +105,14 @@ def get_gfs_24h_precip(init_date: datetime.datetime, target_lead: int, gfs_dir: 
         interval_str = f"f{target_lead-24:03d} - f{target_lead:03d} (Sum of two 12h buckets)"
         lead = target_lead - 12
         f_path = gfs_dir / f"gfs_india_{init_date.strftime('%Y%m%d')}_12z_f{lead:03d}.grib2"
-        ds_int = xr.open_dataset(f_path, engine="cfgrib")
+        ds_int = xr.open_dataset(
+            f_path, 
+            engine="cfgrib",
+            backend_kwargs={
+                "filter_by_keys": {"typeOfLevel": "surface", "stepType": "accum"},
+                "indexpath": ""
+            }
+        )
         tp_24h = tp_24h + ds_int['tp']
         ds_int.close()
     elif step_range == f"0-{target_lead}":
@@ -102,7 +123,14 @@ def get_gfs_24h_precip(init_date: datetime.datetime, target_lead: int, gfs_dir: 
         else:
             prev_lead = target_lead - 24
             f_path = gfs_dir / f"gfs_india_{init_date.strftime('%Y%m%d')}_12z_f{prev_lead:03d}.grib2"
-            ds_prev = xr.open_dataset(f_path, engine="cfgrib")
+            ds_prev = xr.open_dataset(
+                f_path, 
+                engine="cfgrib",
+                backend_kwargs={
+                    "filter_by_keys": {"typeOfLevel": "surface", "stepType": "accum"},
+                    "indexpath": ""
+                }
+            )
             tp_24h = tp_da - ds_prev['tp']
             ds_prev.close()
             interval_str = f"f000-f{target_lead:03d} MINUS f000-f{prev_lead:03d} (Subtraction)"
