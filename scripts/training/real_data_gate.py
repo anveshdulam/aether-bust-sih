@@ -62,20 +62,15 @@ def run_real_data_gate(init_date: datetime.datetime, gfs_dir: Path, era5_dir: Pa
             era5_tp_24h = None
 
         # Process instantaneous to verify bounds
-        gfs_file = gfs_dir / f"gfs_india_{init_date.strftime('%Y%m%d')}_12z_f{target_lead:03d}.grib2"
-        ds_gfs = xr.open_dataset(
-            gfs_file, 
-            engine="cfgrib",
-            backend_kwargs={
-                "filter_by_keys": {"shortName": "t2m", "stepType": "instant"},
-                "indexpath": ""
-            }
-        )
-        t2m = extract_field(ds_gfs, "t2m")
-        
-        print(f"  GFS Spatial Bounds       : Lat {float(t2m.latitude.min())} to {float(t2m.latitude.max())} | Lon {float(t2m.longitude.min())} to {float(t2m.longitude.max())}")
-        print(f"  GFS Extracted Shape      : {t2m.shape}")
-        ds_gfs.close()
+        gfs_nc_file = gfs_dir / f"gfs_{init_date.strftime('%Y%m%d')}_12z_f{target_lead:03d}.nc"
+        if not gfs_nc_file.exists():
+            print(f"  GFS Spatial Bounds       : FAILED (Missing {gfs_nc_file.name})")
+        else:
+            ds_gfs = xr.open_dataset(gfs_nc_file)
+            t2m = extract_field(ds_gfs, "t2m")
+            print(f"  GFS Spatial Bounds       : Lat {float(t2m.latitude.min())} to {float(t2m.latitude.max())} | Lon {float(t2m.longitude.min())} to {float(t2m.longitude.max())}")
+            print(f"  GFS Extracted Shape      : {t2m.shape}")
+            ds_gfs.close()
         
     print("\n============================================================")
     print("GATE INSPECTION COMPLETE")
