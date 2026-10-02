@@ -64,8 +64,7 @@ def get_gfs_24h_precip(init_date: datetime.datetime, target_lead: int, gfs_dir: 
         target_file, 
         engine="cfgrib", 
         backend_kwargs={
-            "filter_by_keys": {"typeOfLevel": "surface", "stepType": "accum"},
-            "indexpath": ""
+            "filter_by_keys": {"typeOfLevel": "surface", "stepType": "accum"}
         }
     )
     if 'tp' not in ds_target:
@@ -94,8 +93,7 @@ def get_gfs_24h_precip(init_date: datetime.datetime, target_lead: int, gfs_dir: 
                 f_path, 
                 engine="cfgrib",
                 backend_kwargs={
-                    "filter_by_keys": {"typeOfLevel": "surface", "stepType": "accum"},
-                    "indexpath": ""
+                    "filter_by_keys": {"typeOfLevel": "surface", "stepType": "accum"}
                 }
             )
             tp_24h = tp_24h + ds_int['tp']
@@ -112,8 +110,7 @@ def get_gfs_24h_precip(init_date: datetime.datetime, target_lead: int, gfs_dir: 
             f_path, 
             engine="cfgrib",
             backend_kwargs={
-                "filter_by_keys": {"typeOfLevel": "surface", "stepType": "accum"},
-                "indexpath": ""
+                "filter_by_keys": {"typeOfLevel": "surface", "stepType": "accum"}
             }
         )
         tp_24h = tp_24h + ds_int['tp']
@@ -130,8 +127,7 @@ def get_gfs_24h_precip(init_date: datetime.datetime, target_lead: int, gfs_dir: 
                 f_path, 
                 engine="cfgrib",
                 backend_kwargs={
-                    "filter_by_keys": {"typeOfLevel": "surface", "stepType": "accum"},
-                    "indexpath": ""
+                    "filter_by_keys": {"typeOfLevel": "surface", "stepType": "accum"}
                 }
             )
             tp_24h = tp_da - ds_prev['tp']
@@ -185,7 +181,7 @@ def process_initialization(init_date: datetime.datetime, gfs_dir: Path, era5_dir
         
         gfs_file = gfs_dir / f"gfs_india_{init_date.strftime('%Y%m%d')}_12z_f{target_lead:03d}.grib2"
         import cfgrib
-        ds_gfs = cfgrib.open_datasets(str(gfs_file), backend_kwargs={'indexpath': ''})
+        ds_gfs = cfgrib.open_datasets(str(gfs_file))
         
         t2m = extract_field(ds_gfs, "t2m")
         z500 = extract_field(ds_gfs, "gh", 500)

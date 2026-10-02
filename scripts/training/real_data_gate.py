@@ -64,7 +64,7 @@ def run_real_data_gate(init_date: datetime.datetime, gfs_dir: Path, era5_dir: Pa
         # Process instantaneous to verify bounds
         gfs_file = gfs_dir / f"gfs_india_{init_date.strftime('%Y%m%d')}_12z_f{target_lead:03d}.grib2"
         import cfgrib
-        ds_gfs = cfgrib.open_datasets(str(gfs_file), backend_kwargs={'indexpath': ''})
+        ds_gfs = cfgrib.open_datasets(str(gfs_file))
         t2m = extract_field(ds_gfs, "t2m")
         print(f"  GFS Spatial Bounds       : Lat {float(t2m.latitude.min())} to {float(t2m.latitude.max())} | Lon {float(t2m.longitude.min())} to {float(t2m.longitude.max())}")
         print(f"  GFS Extracted Shape      : {t2m.shape}")
