@@ -50,7 +50,7 @@ def run_real_data_gate(init_date: datetime.datetime, gfs_dir: Path, era5_dir: Pa
         print(f"  GFS 24h Total            : Mean {gfs_tp_mean:.2f} mm | Min {gfs_tp_24h.min().values:.2f} | Max {gfs_tp_24h.max().values:.2f}")
         
         # --- ERA5 Precipitation ---
-        era5_file = era5_dir / f"era5_india_{valid_date.strftime('%Y_%m')}.nc"
+        era5_file = era5_dir / f"era5_india_sl_{valid_date.strftime('%Y_%m')}.nc"
         # Adjusted for the specific filename structure available in the gate if it's monthly
         # If it's a monthly file, get_era5_24h_precip needs adjusting to slice correctly.
         try:
@@ -63,7 +63,14 @@ def run_real_data_gate(init_date: datetime.datetime, gfs_dir: Path, era5_dir: Pa
 
         # Process instantaneous to verify bounds
         gfs_file = gfs_dir / f"gfs_india_{init_date.strftime('%Y%m%d')}_12z_f{target_lead:03d}.grib2"
-        ds_gfs = xr.open_dataset(gfs_file, engine="cfgrib")
+        ds_gfs = xr.open_dataset(
+            gfs_file, 
+            engine="cfgrib",
+            backend_kwargs={
+                "filter_by_keys": {"typeOfLevel": "heightAboveGround", "stepType": "instant"},
+                "indexpath": ""
+            }
+        )
         t2m = extract_field(ds_gfs, "t2m")
         
         print(f"  GFS Spatial Bounds       : Lat {float(t2m.latitude.min())} to {float(t2m.latitude.max())} | Lon {float(t2m.longitude.min())} to {float(t2m.longitude.max())}")

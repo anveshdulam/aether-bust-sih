@@ -20,10 +20,13 @@ from app.constants import (
 
 def get_era5_24h_precip(era5_file: Path, valid_time: datetime.datetime):
     # ERA5 24h block spans two calendar days (13:00 to 12:00)
-    prev_file = era5_file.parent / f"era5_{(valid_time - datetime.timedelta(days=1)).strftime('%Y%m%d')}.nc"
+    start_time = valid_time - datetime.timedelta(hours=23)
     files_to_open = [era5_file]
-    if prev_file.exists():
-        files_to_open.insert(0, prev_file)
+    
+    if start_time.month != valid_time.month:
+        prev_file = era5_file.parent / f"era5_india_sl_{start_time.strftime('%Y_%m')}.nc"
+        if prev_file.exists():
+            files_to_open.insert(0, prev_file)
         
     ds1 = xr.open_dataset(files_to_open[0])
     if len(files_to_open) == 2:
@@ -194,7 +197,7 @@ def process_initialization(init_date: datetime.datetime, gfs_dir: Path, era5_dir
             x_sequence[lead_idx, ci] = channels[ci].values
             
         # 2. ERA5 Processing (24h continuous precipitation)
-        era5_file = era5_dir / f"era5_{valid_date.strftime('%Y%m%d')}.nc"
+        era5_file = era5_dir / f"era5_india_sl_{valid_date.strftime('%Y_%m')}.nc"
         era5_tp_24h, era5_tp_interval = get_era5_24h_precip(era5_file, valid_date)
         
         ds_era5 = xr.open_dataset(era5_file).sel(time=valid_date) # instantaneous fields at valid_time
