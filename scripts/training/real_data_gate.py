@@ -67,7 +67,7 @@ def run_real_data_gate(init_date: datetime.datetime, gfs_dir: Path, era5_dir: Pa
             gfs_file, 
             engine="cfgrib",
             backend_kwargs={
-                "filter_by_keys": {"typeOfLevel": "heightAboveGround", "stepType": "instant"},
+                "filter_by_keys": {"shortName": "t2m", "stepType": "instant"},
                 "indexpath": ""
             }
         )
