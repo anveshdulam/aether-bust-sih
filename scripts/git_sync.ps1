@@ -3,8 +3,8 @@ param (
 )
 
 Write-Host "Syncing with Git..."
-git pull origin main
+git pull origin master
 git add .
 git commit -m "$CommitMessage"
-git push origin main
+git push origin master
 Write-Host "Git sync complete!"

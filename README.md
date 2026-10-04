@@ -12,7 +12,7 @@
 
 ### 🎯 Smart India Hackathon 2026
 
-**Theme:** Disaster Management  
+**Theme:** Smart Automation  
 **Team Name:** TechBytes  
 **Team ID:** 128249  
 **Institution:** VIT Bhopal University, Sehore  
