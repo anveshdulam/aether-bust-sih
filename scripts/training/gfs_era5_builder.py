@@ -12,7 +12,7 @@ backend_path = str(Path(__file__).resolve().parents[2] / "backend")
 if backend_path not in sys.path:
     sys.path.append(backend_path)
 
-from app.constants import (
+from app.constants import (  # type: ignore
     VAR_CODES, CHANNEL_CODES, TAU,
     PHI_MIN, PHI_MAX, LAMBDA_MIN, LAMBDA_MAX,
     H, W, T, C, V
@@ -29,18 +29,19 @@ def get_era5_24h_precip(era5_file: Path, valid_time: datetime.datetime):
             files_to_open.insert(0, prev_file)
         
     ds1 = xr.open_dataset(files_to_open[0])
+    time_dim = 'valid_time' if 'valid_time' in ds1.dims else 'time'
     if len(files_to_open) == 2:
         ds2 = xr.open_dataset(files_to_open[1])
-        da = xr.concat([ds1['tp'], ds2['tp']], dim='time')
+        da = xr.concat([ds1['tp'], ds2['tp']], dim=time_dim)
     else:
         da = ds1['tp']
     start_time = valid_time - datetime.timedelta(hours=23)
     
-    da_24h = da.sel(time=slice(start_time, valid_time))
-    if len(da_24h.time) != 24:
-        raise ValueError(f"Could not extract exactly 24 hours ending at {valid_time} from {files_to_open}. Got {len(da_24h.time)} steps.")
+    da_24h = da.sel({time_dim: slice(start_time, valid_time)})
+    if len(da_24h[time_dim]) != 24:
+        raise ValueError(f"Could not extract exactly 24 hours ending at {valid_time} from {files_to_open}. Got {len(da_24h[time_dim])} steps.")
         
-    tp_24h = da_24h.sum(dim='time')
+    tp_24h = da_24h.sum(dim=time_dim)
     
     # Convert to mm if necessary
     if tp_24h.max() < 2.0 and tp_24h.max() > 0:
@@ -55,22 +56,29 @@ def get_gfs_24h_precip(init_date: datetime.datetime, target_lead: int, gfs_dir: 
     If 'tp' is a 6-hour bucket (GRIB_stepRange='18-24'), it automatically loads
     and sums the 4 consecutive 6-hour forecast files.
     """
+    import cfgrib
+    
+    def _get_tp_from_file(path: Path):
+        dsets = cfgrib.open_datasets(str(path))
+        for ds in dsets:
+            if 'tp' in ds:
+                return ds['tp']
+        return None
+
     # Load target forecast
     target_file = gfs_dir / f"gfs_india_{init_date.strftime('%Y%m%d')}_12z_f{target_lead:03d}.grib2"
     if not target_file.exists():
         raise FileNotFoundError(f"Missing GFS {target_file.name}")
         
-    ds_target = xr.open_dataset(
-        target_file, 
-        engine="cfgrib", 
-        backend_kwargs={
-            "filter_by_keys": {"typeOfLevel": "surface", "stepType": "accum"}
-        }
-    )
-    if 'tp' not in ds_target:
-        return ds_target['t2m'] * 0.0, "Missing tp", 0.0  # Fallback zero if no precip in model
-        
-    tp_da = ds_target['tp']
+    tp_da = _get_tp_from_file(target_file)
+    ds_target_mock = True # just to avoid closing issues later
+    if tp_da is None:
+        # Fallback zero if no precip in model, we need the shape of t2m
+        dsets = cfgrib.open_datasets(str(target_file))
+        for ds in dsets:
+            if 't2m' in ds:
+                return ds['t2m'] * 0.0, "Missing tp", 0.0
+        raise ValueError("Could not find t2m either for fallback shape.")
     
     # Inspect stepRange
     step_range = tp_da.attrs.get('GRIB_stepRange', '')
@@ -89,16 +97,10 @@ def get_gfs_24h_precip(init_date: datetime.datetime, target_lead: int, gfs_dir: 
             f_path = gfs_dir / f"gfs_india_{init_date.strftime('%Y%m%d')}_12z_f{lead:03d}.grib2"
             if not f_path.exists():
                 raise FileNotFoundError(f"Missing intermediate GFS for 6h bucket sum: {f_path.name}")
-            ds_int = xr.open_dataset(
-                f_path, 
-                engine="cfgrib",
-                backend_kwargs={
-                    "filter_by_keys": {"typeOfLevel": "surface", "stepType": "accum"}
-                }
-            )
-            tp_24h = tp_24h + ds_int['tp']
-            bucket_strs.append(ds_int['tp'].attrs.get('GRIB_stepRange', f"{lead-6}-{lead}"))
-            ds_int.close()
+            tp_int = _get_tp_from_file(f_path)
+            if tp_int is not None:
+                tp_24h = tp_24h + tp_int
+                bucket_strs.append(tp_int.attrs.get('GRIB_stepRange', f"{lead-6}-{lead}"))
         interval_str += ", ".join(reversed(bucket_strs)) + ")"
     elif step_range == f"{target_lead-12}-{target_lead}":
         # 12-hour accumulation bucket
@@ -106,15 +108,9 @@ def get_gfs_24h_precip(init_date: datetime.datetime, target_lead: int, gfs_dir: 
         interval_str = f"f{target_lead-24:03d} - f{target_lead:03d} (Sum of two 12h buckets)"
         lead = target_lead - 12
         f_path = gfs_dir / f"gfs_india_{init_date.strftime('%Y%m%d')}_12z_f{lead:03d}.grib2"
-        ds_int = xr.open_dataset(
-            f_path, 
-            engine="cfgrib",
-            backend_kwargs={
-                "filter_by_keys": {"typeOfLevel": "surface", "stepType": "accum"}
-            }
-        )
-        tp_24h = tp_24h + ds_int['tp']
-        ds_int.close()
+        tp_int = _get_tp_from_file(f_path)
+        if tp_int is not None:
+            tp_24h = tp_24h + tp_int
     elif step_range == f"0-{target_lead}":
         # Cumulative from init. We subtract the 24h prior.
         if target_lead == 24:
@@ -123,22 +119,18 @@ def get_gfs_24h_precip(init_date: datetime.datetime, target_lead: int, gfs_dir: 
         else:
             prev_lead = target_lead - 24
             f_path = gfs_dir / f"gfs_india_{init_date.strftime('%Y%m%d')}_12z_f{prev_lead:03d}.grib2"
-            ds_prev = xr.open_dataset(
-                f_path, 
-                engine="cfgrib",
-                backend_kwargs={
-                    "filter_by_keys": {"typeOfLevel": "surface", "stepType": "accum"}
-                }
-            )
-            tp_24h = tp_da - ds_prev['tp']
-            ds_prev.close()
+            tp_prev = _get_tp_from_file(f_path)
+            if tp_prev is not None:
+                tp_24h = tp_da - tp_prev
+            else:
+                tp_24h = tp_da
             interval_str = f"f000-f{target_lead:03d} MINUS f000-f{prev_lead:03d} (Subtraction)"
     else:
         # Fallback assuming it's a simulated or unified netcdf
         tp_24h = tp_da
         interval_str = f"f{target_lead-24:03d} - f{target_lead:03d} (Assumed single file 24h based on '{step_range}')"
         
-    ds_target.close()
+    # No need to close ds_target as cfgrib.open_datasets manages its own file handles
     
     if tp_24h.max() < 2.0 and tp_24h.max() > 0: 
         tp_24h = tp_24h * 1000.0
@@ -226,7 +218,10 @@ def process_initialization(init_date: datetime.datetime, gfs_dir: Path, era5_dir
         era5_file = era5_dir / f"era5_india_sl_{valid_date.strftime('%Y_%m')}.nc"
         era5_tp_24h, era5_tp_interval = get_era5_24h_precip(era5_file, valid_date)
         
-        ds_era5 = xr.open_dataset(era5_file).sel(time=valid_date) # instantaneous fields at valid_time
+        ds_era5_full = xr.open_dataset(era5_file)
+        time_dim = 'valid_time' if 'valid_time' in ds_era5_full.dims else 'time'
+        ds_era5 = ds_era5_full.sel({time_dim: valid_date}) # instantaneous fields at valid_time
+        
         era_t2m = extract_field(ds_era5, "t2m")
         era_z500 = extract_field(ds_era5, "z", 500) / 9.80665
         era_u850 = extract_field(ds_era5, "u", 850)

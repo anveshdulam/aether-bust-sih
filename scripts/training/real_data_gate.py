@@ -13,7 +13,7 @@ if backend_path not in sys.path:
     sys.path.append(backend_path)
 sys.path.append(str(Path(__file__).resolve().parent))
 
-from app.constants import (
+from app.constants import (  # type: ignore
     VAR_CODES, CHANNEL_CODES, TAU,
     PHI_MIN, PHI_MAX, LAMBDA_MIN, LAMBDA_MAX,
     H, W, T, C, V

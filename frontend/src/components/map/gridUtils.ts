@@ -8,12 +8,12 @@ export function createRasterImage(
   values: number[][], // 128x128
   meta: GridMeta,
   colormap: (val: number) => [number, number, number, number]
-): ImageData {
+): { width: number, height: number, data: Uint8Array } {
   const width = meta.n_cols;
   const height = meta.n_rows;
   
   // Create OffscreenCanvas or just a Uint8ClampedArray if we are creating ImageData manually
-  const data = new Uint8ClampedArray(width * height * 4);
+  const data = new Uint8Array(width * height * 4);
   
   // We want to map evenly spaced Web Mercator Y to the evenly spaced Latitude rows.
   // We are going to just draw it row by row right now. 
@@ -33,5 +33,5 @@ export function createRasterImage(
     }
   }
   
-  return new ImageData(data, width, height);
+  return { width, height, data };
 }

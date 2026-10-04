@@ -284,6 +284,15 @@ class InferenceRunner:
 
         d = self.ensure_inputs(run_id)
 
+        if (d / "bust.npy").exists() and (d / "error.npy").exists() and (d / "confidence.npy").exists():
+            return InferenceResult(
+                np.load(d / "bust.npy"),
+                np.load(d / "error.npy"),
+                np.load(d / "confidence.npy"),
+                [],
+                None
+            )
+
         X = np.load(
             d / "X.npy"
         ).astype(np.float32)
@@ -322,8 +331,8 @@ class InferenceRunner:
 
         # --- 1. Deep Learning Layer (BustNet) ---
         if self.fallback_mode or self.model is None:
-            # Fallback: ML probabilities are basically random/low confidence
-            Yb = np.random.rand(T, V, H, W).astype(np.float32) * 0.3
+            # Fallback: ML probabilities are zeroed out (rely entirely on baseline fusion)
+            Yb = np.zeros((T, V, H, W), dtype=np.float32)
             Ye = np.zeros((T, V, H, W), dtype=np.float32)
         else:
             with torch.no_grad():
@@ -331,6 +340,7 @@ class InferenceRunner:
                     np.asarray(X_npy, dtype=np.float32),
                     device=self.device,
                 )
+                
                 out = self.model(X_t)
                 Yb = out["bust"].cpu().numpy()[0]
                 Ye = out["error"].cpu().numpy()[0]

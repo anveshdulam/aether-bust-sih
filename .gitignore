@@ -39,3 +39,6 @@ backend/artifacts/
 data/
 backend/data_storage/
 backend/data/
+
+WORKING_NOTES.md
+CLAUDE.md

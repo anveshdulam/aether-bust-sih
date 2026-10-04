@@ -3,10 +3,12 @@ import DeckGL from '@deck.gl/react';
 import { TileLayer } from '@deck.gl/geo-layers';
 import { BitmapLayer, PathLayer } from '@deck.gl/layers';
 import { useAppStore } from '../../store/useAppStore';
-import { useConfidenceMap } from '../../api/queries';
+import { useConfidenceMap, useErrorMap } from '../../api/queries';
 import { createRasterImage } from './gridUtils';
 import { ScrubberBar } from './ScrubberBar';
+import { MapLegend } from './MapLegend';
 import { useBustPolygonLayer } from './useBustPolygonLayer';
+import { SCALE_ERROR_DIVERGING } from '../../theme/colormaps';
 
 const turboColormap = [
   [48, 18, 59], [62, 74, 137], [49, 104, 142], [38, 130, 142],
@@ -16,10 +18,10 @@ const turboColormap = [
 ];
 
 const getConfidenceColor = (val: number): [number, number, number, number] => {
-  const normalized = Math.max(0, Math.min(1, 1 - val));
-  
-  if (val > 0.8) return [0, 0, 0, 0];
+  // Lowered the transparency threshold from 0.15 to 0.02 so the user can see the AI is running
+  if (val < 0.02) return [0, 0, 0, 0];
 
+  const normalized = Math.max(0, Math.min(1, val));
   const maxIdx = turboColormap.length - 1;
   const exactIdx = normalized * maxIdx;
   const idx1 = Math.floor(exactIdx);
@@ -33,37 +35,93 @@ const getConfidenceColor = (val: number): [number, number, number, number] => {
   const g = c1[1] + (c2[1] - c1[1]) * frac;
   const b = c1[2] + (c2[2] - c1[2]) * frac;
   
-  const a = val < 0.2 ? 220 : val < 0.5 ? 180 : 120;
+  // Provide faint visibility even for very low confidence so the layer doesn't appear "empty"
+  const a = val > 0.8 ? 220 : val > 0.5 ? 180 : val > 0.15 ? 120 : 60;
+
+  return [r, g, b, a];
+};
+
+const getErrorColor = (val: number): [number, number, number, number] => {
+  // Normalize the error. Assuming error ranges from roughly -3 to +3 for standard vars.
+  // Actually, we'll clamp it arbitrarily for visual purposes if we don't have tau_v handy.
+  const normalized = Math.max(0, Math.min(1, (val + 5) / 10)); // simple generic normalization
+  
+  const scale = SCALE_ERROR_DIVERGING;
+  let lower = scale[0];
+  let upper = scale[scale.length - 1];
+
+  for (let i = 0; i < scale.length - 1; i++) {
+    if (normalized >= scale[i].stop && normalized <= scale[i + 1].stop) {
+      lower = scale[i];
+      upper = scale[i + 1];
+      break;
+    }
+  }
+
+  const range = upper.stop - lower.stop;
+  const frac = range === 0 ? 0 : (normalized - lower.stop) / range;
+
+  const r = lower.rgba[0] + (upper.rgba[0] - lower.rgba[0]) * frac;
+  const g = lower.rgba[1] + (upper.rgba[1] - lower.rgba[1]) * frac;
+  const b = lower.rgba[2] + (upper.rgba[2] - lower.rgba[2]) * frac;
+  
+  // Make it fully opaque if there is an error, otherwise faint
+  const a = Math.abs(val) > 0.1 ? 200 : 40;
 
   return [r, g, b, a];
 };
 
 export const RiskMap = () => {
-  const { runId, viewState, setViewState, setSelectedCell, activeRaster, opacity } = useAppStore();
+  const { runId, viewState, setViewState, setSelectedCell, activeRaster, opacity, leadTime, variable } = useAppStore();
   
-  const { data: confidenceData } = useConfidenceMap(runId, 1);
+  const { data: confidenceData } = useConfidenceMap(runId, leadTime);
+  const { data: errorData } = useErrorMap(
+    runId, 
+    variable, 
+    (activeRaster === 'error' || activeRaster === 'baseline') ? activeRaster : null, 
+    leadTime
+  );
   const bustLayer = useBustPolygonLayer();
 
   const rasterLayer = useMemo(() => {
-    if (!confidenceData || activeRaster !== 'confidence') return null;
+    if (activeRaster === 'confidence' && confidenceData) {
+      const { values, grid } = confidenceData;
+      const imageData = createRasterImage(values, grid, getConfidenceColor);
 
-    const { values, grid } = confidenceData;
-    const imageData = createRasterImage(values, grid, getConfidenceColor);
+      return new BitmapLayer({
+        id: 'confidence-raster',
+        bounds: [grid.lon_min, grid.lat_min, grid.lon_max, grid.lat_max],
+        image: imageData,
+        opacity: opacity,
+        pickable: false,
+        textureParameters: {
+          10241: 9729,
+          10240: 9729,
+        }
+      });
+    }
 
-    return new BitmapLayer({
-      id: 'confidence-raster',
-      bounds: [grid.lon_min, grid.lat_min, grid.lon_max, grid.lat_max],
-      image: imageData,
-      opacity: opacity,
-      pickable: false,
-      textureParameters: {
-        10241: 9729,
-        10240: 9729,
-      }
-    });
-  }, [confidenceData, activeRaster, opacity]);
+    if ((activeRaster === 'error' || activeRaster === 'baseline') && errorData) {
+      const { values, grid } = errorData;
+      const imageData = createRasterImage(values, grid, getErrorColor);
 
-  const layers = [
+      return new BitmapLayer({
+        id: 'error-raster',
+        bounds: [grid.lon_min, grid.lat_min, grid.lon_max, grid.lat_max],
+        image: imageData,
+        opacity: opacity,
+        pickable: false,
+        textureParameters: {
+          10241: 9729,
+          10240: 9729,
+        }
+      });
+    }
+
+    return null;
+  }, [confidenceData, errorData, activeRaster, opacity]);
+
+  const layers = useMemo(() => [
     new TileLayer({
       id: 'basemap-tiles',
       data: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
@@ -114,7 +172,7 @@ export const RiskMap = () => {
       getColor: [217, 224, 234, 30],
       getPath: d => d.path
     }),
-  ].filter(Boolean);
+  ].filter(Boolean), [rasterLayer, bustLayer]);
 
   return (
     <div className="w-full h-full relative bg-inset overflow-hidden cursor-crosshair">
@@ -135,6 +193,7 @@ export const RiskMap = () => {
         <span>zoom: {viewState.zoom.toFixed(1)}</span>
         <span>layer: {activeRaster}</span>
       </div>
+      <MapLegend />
       <ScrubberBar />
     </div>
   );

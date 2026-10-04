@@ -13,8 +13,7 @@ class FusionEngine:
     Controls false-positives by requiring agreement for High/Critical alerts.
     """
 
-    def __init__(self):
-        pass
+
 
     def fuse(self, baseline_flags: np.ndarray, ml_probs: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """

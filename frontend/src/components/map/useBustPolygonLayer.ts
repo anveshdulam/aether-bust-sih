@@ -31,8 +31,8 @@ const getPolygonColor = (val: number): [number, number, number, number] => {
 };
 
 export const useBustPolygonLayer = () => {
-  const { runId, activeRaster, opacity, setSelectedCell } = useAppStore();
-  const { data: detections } = useBustDetections(runId);
+  const { runId, activeRaster, opacity, setSelectedCell, leadTime } = useAppStore();
+  const { data: detections } = useBustDetections(runId, leadTime);
 
   return useMemo(() => {
     if (!detections || activeRaster !== 'p_bust') return null;

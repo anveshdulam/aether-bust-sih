@@ -375,13 +375,20 @@ class RunService:
     # -- persistence --------------------------------------------------------
 
     def run_document(self, run_id: str) -> dict:
-        result = self.get_result(run_id)
         now = utcnow()
         d = self.runner.run_dir(run_id)
+        
+        # Fast path for mean_confidence to avoid full CPU inference
+        confidence_path = d / "confidence.npy"
+        if confidence_path.exists():
+            mean_conf = float(np.clip(np.load(confidence_path).mean(), 0.0, 100.0))
+        else:
+            mean_conf = 0.0  # Avoid blocking inference on list endpoint
+            
         return {
             "run_id": run_id,
             "init_time": deterministic_init_time(run_id),
-            "source_model": "SYNTHETIC",
+            "source_model": "GFS" if "real" in run_id else "SYNTHETIC",
             "n_lead_times": int(T),
             "grid": {
                 "lat_min": float(lat_vector()[0]),
@@ -399,7 +406,7 @@ class RunService:
                 "bust_uri": str((d / "bust.npy").as_posix()),
                 "error_uri": str((d / "error.npy").as_posix()),
             },
-            "mean_confidence": float(np.clip(result.confidence.mean(), 0.0, 100.0)),
+            "mean_confidence": mean_conf,
             "status": "COMPLETE",
             "created_at": now,
             "updated_at": now,

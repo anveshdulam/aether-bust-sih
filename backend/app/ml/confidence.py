@@ -15,5 +15,5 @@ def confidence_index(bust_prob: np.ndarray) -> np.ndarray:
     # sum over variables (axis 1)
     weighted_prob = np.sum(w * bust_prob, axis=1)
     
-    conf = 100.0 * (1.0 - weighted_prob)
-    return np.clip(conf, 0.0, 100.0).astype(np.float32)
+    conf = 1.0 - weighted_prob
+    return np.clip(conf, 0.0, 1.0).astype(np.float32)

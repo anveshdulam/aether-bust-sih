@@ -25,12 +25,25 @@ export const useConfidenceMap = (runId: string | null, leadTime: LeadTime) => {
   return useQuery({
     queryKey: ['confidence-map', runId, leadTime],
     queryFn: async () => {
-      const res = await apiClient.get<ConfidenceMapResponse>(`/confidence/${runId}`, {
-        params: { lead_time: leadTime }
+      const res = await apiClient.get<ConfidenceMapResponse>(`/confidence-map`, {
+        params: { run_id: runId, lead_time: leadTime }
       });
       return res.data;
     },
     enabled: !!runId
+  });
+};
+
+export const useErrorMap = (runId: string | null, variable: string | null, layerType: string | null, leadTime: LeadTime) => {
+  return useQuery({
+    queryKey: ['error-map', runId, variable, layerType, leadTime],
+    queryFn: async () => {
+      const res = await apiClient.get<any>(`/error-map`, {
+        params: { run_id: runId, variable: variable, layer_type: layerType, lead_time: leadTime }
+      });
+      return res.data;
+    },
+    enabled: !!runId && !!variable && !!layerType
   });
 };
 
@@ -69,12 +82,12 @@ export const useHealth = () => {
   });
 };
 
-export const useBustDetections = (runId: string | null) => {
+export const useBustDetections = (runId: string | null, leadTime: LeadTime) => {
   return useQuery({
-    queryKey: ['bust-detections', runId],
+    queryKey: ['bust-detections', runId, leadTime],
     queryFn: async () => {
       // It returns Page[BustDetection], so we extract items
-      const res = await apiClient.get<{ items: any[] }>('/bust-detections', { params: { run_id: runId } });
+      const res = await apiClient.get<{ items: any[] }>('/bust-detections', { params: { run_id: runId, lead_time: leadTime } });
       return res.data.items;
     },
     enabled: !!runId
