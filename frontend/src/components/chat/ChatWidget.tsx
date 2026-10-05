@@ -264,15 +264,43 @@ export function ChatWidget() {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Tool Chips (Quick Actions) */}
+      <div className="px-3 pb-2 pt-1 bg-white/5 border-t border-white/10 flex gap-2 overflow-x-auto custom-scrollbar whitespace-nowrap">
+        <button
+          onClick={() => setInput('Find the highest risk hotspot for Day 7')}
+          className="text-xs px-3 py-1.5 rounded-full bg-blue-500/20 text-blue-300 hover:bg-blue-500/40 transition-colors border border-blue-500/30"
+        >
+          🔍 Find Day 7 Hotspots
+        </button>
+        <button
+          onClick={() => {
+            if (viewState.latitude && viewState.longitude) {
+              setInput(`Why is it flagging a bust at ${viewState.latitude.toFixed(2)}N, ${viewState.longitude.toFixed(2)}E on Day ${leadTime}?`);
+            } else {
+              setInput(`Why is it flagging a bust here on Day ${leadTime}?`);
+            }
+          }}
+          className="text-xs px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/40 transition-colors border border-emerald-500/30"
+        >
+          🧠 Explain this region
+        </button>
+        <button
+          onClick={() => setInput('Show me the error magnitude layer instead of probability')}
+          className="text-xs px-3 py-1.5 rounded-full bg-purple-500/20 text-purple-300 hover:bg-purple-500/40 transition-colors border border-purple-500/30"
+        >
+          🗺️ Show Error Map
+        </button>
+      </div>
+
       {/* Input Area */}
-      <div className="p-3 border-t border-white/10 bg-white/5">
+      <div className="p-3 bg-white/5">
         <div className="flex items-end space-x-2 bg-black/30 p-2 rounded-xl border border-white/10 focus-within:border-blue-500/50 transition-colors">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask AETHER..."
-            className="flex-1 bg-transparent border-none focus:ring-0 text-sm text-white resize-none max-h-32 min-h-[40px] py-2 px-2 custom-scrollbar"
+            className="flex-1 bg-transparent border-none focus:ring-0 text-sm text-white resize-none max-h-32 min-h-[40px] py-2 px-2 custom-scrollbar outline-none"
             rows={1}
             style={{
               height: Math.min(120, Math.max(40, input.split('\n').length * 20 + 20)) + 'px'
