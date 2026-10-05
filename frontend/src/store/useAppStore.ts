@@ -19,6 +19,7 @@ interface AppState {
   baselineMode: boolean;
   leadTime: number;
   viewState: ViewState;
+  isChatOpen: boolean;
 
   // Actions
   setRunId: (id: string | null) => void;
@@ -30,6 +31,7 @@ interface AppState {
   setBaselineMode: (mode: boolean) => void;
   setViewState: (vs: ViewState) => void;
   setLeadTime: (lt: number) => void;
+  setIsChatOpen: (isOpen: boolean) => void;
 }
 
 // Helper to parse URL params initially
@@ -59,6 +61,7 @@ export const useAppStore = create<AppState>((set) => ({
   confidenceBand: [0, 1],
   baselineMode: initialUrlState.baselineMode,
   leadTime: initialUrlState.leadTime,
+  isChatOpen: false,
   viewState: {
     longitude: 83.87, // Center of India
     latitude: 21.87,
@@ -76,6 +79,7 @@ export const useAppStore = create<AppState>((set) => ({
   setBaselineMode: (mode) => set({ baselineMode: mode }),
   setViewState: (vs) => set({ viewState: vs }),
   setLeadTime: (lt) => set({ leadTime: lt }),
+  setIsChatOpen: (isOpen) => set({ isChatOpen: isOpen }),
 }));
 
 // Sync Zustand state to URL (one-way: Store -> URL)

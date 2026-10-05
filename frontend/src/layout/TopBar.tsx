@@ -61,6 +61,13 @@ export const TopBar: React.FC = () => {
           </Pill>
         )}
         
+        <button
+          onClick={() => useAppStore.getState().setIsChatOpen(!useAppStore.getState().isChatOpen)}
+          className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-md transition-colors shadow-[0_0_10px_rgba(37,99,235,0.3)] hover:shadow-[0_0_15px_rgba(37,99,235,0.5)]"
+        >
+          <span className="text-blue-200">⚡</span> AETHER
+        </button>
+
         <div className="flex items-center gap-2" title={`Mongo: ${health?.mongo}, Model: ${health?.model_loaded}`}>
           <span className="text-xs text-text-muted">SYSTEM</span>
           <StatusDot status={health?.status === 'ok' ? 'ok' : 'warn'} />
