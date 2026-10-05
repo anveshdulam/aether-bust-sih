@@ -70,9 +70,34 @@ class ChatAgent:
         return {"max_bust_probability": max_prob}
 
     def _get_attribution(self, run_id: str, lat: float, lon: float, day: int) -> dict:
-        # Use existing attribution endpoint logic, but pick the max variable
-        # For simplicity, we just use the first variable that has a high peak, or default to z500
-        return self.svc.attribution(run_id, "z500", day, lat, lon)
+        from app.services.run_service import lat_index, lon_index
+        from app.constants import VAR_CODES
+        
+        res = self.svc.get_result(run_id)
+        i, j = lat_index(lat), lon_index(lon)
+        
+        best_var = "z500"
+        best_prob = -1.0
+        
+        # Find the variable with the highest bust probability at this cell
+        for v_idx, var_code in enumerate(VAR_CODES):
+            p = float(res.bust[day - 1, v_idx, i, j])
+            if p > best_prob:
+                best_prob = p
+                best_var = var_code
+                
+        attr = self.svc.attribution(run_id, best_var, day, lat, lon)
+        
+        # Return a concise summary for the LLM context to avoid context overload
+        return {
+            "target_variable": best_var,
+            "bust_probability": best_prob,
+            "top_drivers": [
+                {"variable": d["channel_name"], "score": d["score"], "sign": d["sign"]}
+                for d in attr["drivers"][:3]  # Only top 3 to keep it concise
+            ],
+            "narrative": attr["narrative"]
+        }
 
     def _compare_days(self, run_id: str, day_a: int, day_b: int, bbox: list[float] = None) -> dict:
         # Simplified comparison
