@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     TORCH_NUM_THREADS: int = Field(default=1, ge=1)
 
     ARTIFACTS_DIR: str = str(BACKEND_ROOT / "artifacts")
+    
+    # Gemini Chatbot Config
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL_PRO: str = "gemini-2.5-pro"
+    GEMINI_MODEL_FAST: str = "gemini-2.5-flash"
 
     @field_validator("CORS_ORIGINS")
     @classmethod

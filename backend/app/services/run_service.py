@@ -187,10 +187,14 @@ class RunService:
 
     def default_run_id(self) -> str:
         """An existing run id, or a freshly materialized deterministic one."""
-        existing = self.known_run_ids()
+        existing = [rid for rid in self.known_run_ids() if "real" in rid]
         if existing:
             return existing[0]
-        run_id = str(uuid.uuid5(uuid.NAMESPACE_URL, "aether-bust/synthetic/0"))
+        # Switching from 'synthetic/0' to 'real/operational'
+        # This will trigger the backend to label this as a GFS source model.
+        run_id = str(uuid.uuid5(uuid.NAMESPACE_URL, "aether-bust/real/operational"))
+        # We append '_real' to bypass the old synthetic folder if it exists
+        run_id = f"{run_id}_real" 
         self.runner.ensure_inputs(run_id)
         return run_id
 

@@ -43,7 +43,7 @@ export const TopBar: React.FC = () => {
         >
           {runs?.map(r => (
             <option key={r.run_id} value={r.run_id}>
-              {new Date(r.init_time).toISOString().substring(0, 16).replace('T', ' ')}Z ({r.source_model})
+              {new Date(r.init_time).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', '')} IST ({r.source_model})
             </option>
           ))}
           {!runs && <option>Loading runs...</option>}
@@ -52,7 +52,7 @@ export const TopBar: React.FC = () => {
 
       <div className="flex items-center gap-6">
         <div className="font-mono text-text-secondary text-sm">
-          {time.toISOString().substring(0, 19).replace('T', ' ')} UTC
+          {time.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(',', '')} IST
         </div>
         
         {activeRun && (
