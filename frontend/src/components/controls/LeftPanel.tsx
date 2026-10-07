@@ -1,14 +1,12 @@
-import { RunSelector } from './RunSelector';
 import { VariableToggle } from './VariableToggle';
-import { LeadTimeSlider } from './LeadTimeSlider';
 import { LayerToggle } from './LayerToggle';
+import { TopRiskRegions } from './TopRiskRegions';
 
 export const LeftPanel = () => {
   return (
-    <div className="flex flex-col h-full">
-      <RunSelector />
+    <div className="flex flex-col h-full gap-6 p-4">
       <VariableToggle />
-      <LeadTimeSlider />
+      <TopRiskRegions />
       <div className="flex-1" />
       <LayerToggle />
     </div>

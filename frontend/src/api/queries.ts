@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
 import { apiClient } from './client';
 import {
   ForecastRunSummary,
@@ -75,7 +76,8 @@ export const useHealth = () => {
   return useQuery({
     queryKey: ['health'],
     queryFn: async () => {
-      const res = await apiClient.get<HealthResponse>('/health');
+      // Health is mounted at root, not /api/v1
+      const res = await axios.get<HealthResponse>('/health');
       return res.data;
     },
     refetchInterval: 30000

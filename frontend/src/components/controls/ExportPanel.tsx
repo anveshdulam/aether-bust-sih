@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { useConsoleStore } from '../../store/useConsoleStore';
+import { useAppStore } from '../../store/useAppStore';
 
 const API_BASE = 'http://localhost:8000/api/v1';
 
 export const ExportPanel = () => {
-  const { runId, variable, leadTime } = useConsoleStore();
+  const { runId, variable, leadTime } = useAppStore();
   const [downloading, setDownloading] = useState<string | null>(null);
 
   const handleDownload = async (layer: 'p_bust' | 'expected_error' | 'confidence', format: 'geojson' | 'geotiff' | 'netcdf') => {
@@ -40,26 +40,26 @@ export const ExportPanel = () => {
 
   return (
     <div className="mt-8 flex flex-col gap-2">
-      <div className="flex justify-between items-center pb-2 border-b border-line mb-2">
-        <span className="text-xs font-mono text-mute uppercase tracking-widest">Data Export</span>
-        <span className="text-[10px] bg-accent/10 text-accent px-1.5 py-0.5 border border-accent/20">Day {leadTime}</span>
+      <div className="flex justify-between items-center pb-2 border-b border-border mb-2">
+        <span className="text-xs font-mono text-text-muted uppercase tracking-widest">Data Export</span>
+        <span className="text-[10px] bg-accent/10 text-accent px-1.5 py-0.5 border border-accent/20 rounded">Day {leadTime}</span>
       </div>
       
       <div className="flex flex-col gap-2 text-sm">
         <div className="flex items-center justify-between">
-          <span className="text-ink">Bust Probability</span>
+          <span className="text-text-primary text-xs">Bust Probability</span>
           <div className="flex gap-1">
             <button 
               onClick={() => handleDownload('p_bust', 'geojson')}
               disabled={downloading === 'p_bust-geojson'}
-              className="px-2 py-1 bg-element border border-line text-xs hover:border-accent hover:text-accent disabled:opacity-50 transition-colors"
+              className="px-2 py-1 bg-bg-raised rounded border border-border text-xs text-text-muted hover:border-accent hover:text-accent disabled:opacity-50 transition-colors"
             >
               GeoJSON
             </button>
             <button 
               onClick={() => handleDownload('p_bust', 'netcdf')}
               disabled={downloading === 'p_bust-netcdf'}
-              className="px-2 py-1 bg-element border border-line text-xs hover:border-accent hover:text-accent disabled:opacity-50 transition-colors"
+              className="px-2 py-1 bg-bg-raised rounded border border-border text-xs text-text-muted hover:border-accent hover:text-accent disabled:opacity-50 transition-colors"
             >
               NetCDF
             </button>
@@ -67,19 +67,19 @@ export const ExportPanel = () => {
         </div>
 
         <div className="flex items-center justify-between">
-          <span className="text-ink">Expected Error</span>
+          <span className="text-text-primary text-xs">Expected Error</span>
           <div className="flex gap-1">
             <button 
               onClick={() => handleDownload('expected_error', 'geotiff')}
               disabled={downloading === 'expected_error-geotiff'}
-              className="px-2 py-1 bg-element border border-line text-xs hover:border-accent hover:text-accent disabled:opacity-50 transition-colors"
+              className="px-2 py-1 bg-bg-raised rounded border border-border text-xs text-text-muted hover:border-accent hover:text-accent disabled:opacity-50 transition-colors"
             >
               GeoTIFF
             </button>
             <button 
               onClick={() => handleDownload('expected_error', 'netcdf')}
               disabled={downloading === 'expected_error-netcdf'}
-              className="px-2 py-1 bg-element border border-line text-xs hover:border-accent hover:text-accent disabled:opacity-50 transition-colors"
+              className="px-2 py-1 bg-bg-raised rounded border border-border text-xs text-text-muted hover:border-accent hover:text-accent disabled:opacity-50 transition-colors"
             >
               NetCDF
             </button>

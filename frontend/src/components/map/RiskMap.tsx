@@ -188,11 +188,6 @@ export const RiskMap = () => {
         }}
         getCursor={({ isHovering }) => isHovering ? 'pointer' : 'crosshair'}
       />
-      <div className="absolute bottom-4 left-4 bg-panel border border-line p-2 font-mono text-11 text-ink flex gap-4 pointer-events-none">
-        <span>{viewState.latitude.toFixed(2)}°N {viewState.longitude.toFixed(2)}°E</span>
-        <span>zoom: {viewState.zoom.toFixed(1)}</span>
-        <span>layer: {activeRaster}</span>
-      </div>
       <MapLegend />
       <ScrubberBar />
     </div>

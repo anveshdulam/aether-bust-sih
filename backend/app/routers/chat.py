@@ -8,7 +8,7 @@ from app.config import get_settings
 from app.services.run_service import RunService, get_run_service
 from app.services.chat_service import ChatAgent
 
-router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
+router = APIRouter(prefix="/chat", tags=["chat"])
 
 class ChatMessage(BaseModel):
     role: str

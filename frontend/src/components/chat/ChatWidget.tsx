@@ -26,7 +26,17 @@ export function ChatWidget() {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  if (!isChatOpen) return null;
+  if (!isChatOpen) {
+    return (
+      <button
+        onClick={() => setIsChatOpen(true)}
+        className="absolute bottom-12 right-6 w-12 h-12 bg-accent hover:bg-accent/80 text-white rounded-full shadow-popover flex items-center justify-center z-50 transition-colors"
+        title="Open AETHER Support"
+      >
+        <Bot size={24} />
+      </button>
+    );
+  }
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -180,32 +190,38 @@ export function ChatWidget() {
   };
 
   return (
-    <div className="absolute top-20 right-4 w-96 max-h-[calc(100vh-6rem)] bg-[#0A0E17]/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col z-50 overflow-hidden transform transition-all duration-300">
+    <div className="absolute bottom-24 right-6 w-96 max-h-[calc(100vh-8rem)] bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl shadow-black/50 flex flex-col z-50 overflow-hidden transform transition-all duration-300">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
+      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-700 to-blue-600 border-b border-blue-800">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-blue-500/20 rounded-lg">
-            <Zap size={18} className="text-blue-400" />
+          <div className="relative">
+            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
+              <Bot size={22} className="text-blue-600" />
+            </div>
+            <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-blue-600 rounded-full" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-white tracking-wide">AETHER Analyst</h3>
-            <p className="text-xs text-emerald-400 font-mono">Online</p>
+            <h3 className="text-base font-semibold text-white leading-tight">AETHER Support</h3>
+            <p className="text-xs text-blue-100/80">Typically replies instantly</p>
           </div>
         </div>
         <button
           onClick={() => setIsChatOpen(false)}
-          className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white"
+          className="p-1.5 hover:bg-white/20 rounded-full transition-colors text-white/80 hover:text-white"
         >
-          <X size={18} />
+          <X size={20} />
         </button>
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-[300px] max-h-[500px]">
+      <div className="flex-1 overflow-y-auto p-4 space-y-5 bg-slate-50 min-h-[300px] max-h-[500px]">
         {messages.length === 0 && (
-          <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-50">
-            <Bot size={48} className="text-slate-400" />
-            <p className="text-sm text-slate-400 max-w-[200px]">
+          <div className="h-full flex flex-col items-center justify-center text-center space-y-3 mt-4">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-2">
+              <Bot size={32} className="text-blue-600" />
+            </div>
+            <h4 className="text-slate-800 font-medium">How can we help?</h4>
+            <p className="text-sm text-slate-500 max-w-[220px]">
               Ask me to analyze regions, compare days, or explain forecast busts.
             </p>
           </div>
@@ -219,45 +235,55 @@ export function ChatWidget() {
             }`}
           >
             {msg.role === 'model' && msg.toolCalls && msg.toolCalls.length > 0 && (
-              <div className="flex flex-col space-y-1 mb-2">
+              <div className="flex flex-col space-y-1 mb-1 ml-1">
                 {msg.toolCalls.map((tc, idx) => (
-                  <div key={idx} className="flex items-center space-x-2 text-xs text-slate-400 bg-white/5 px-2 py-1 rounded-md">
+                  <div key={idx} className="flex items-center space-x-2 text-xs text-slate-500">
                     {tc.status === 'running' ? (
-                      <Loader2 size={12} className="animate-spin text-blue-400" />
+                      <Loader2 size={12} className="animate-spin text-blue-500" />
                     ) : (
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     )}
-                    <span className="font-mono">Call {tc.name}()</span>
+                    <span className="italic">Running {tc.name}...</span>
                   </div>
                 ))}
               </div>
             )}
             
-            <div
-              className={`max-w-[85%] p-3 rounded-2xl ${
-                msg.role === 'user'
-                  ? 'bg-blue-600/80 text-white rounded-br-sm'
-                  : 'bg-white/10 text-slate-200 rounded-bl-sm border border-white/5'
-              }`}
-            >
-              {msg.role === 'user' ? (
-                <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
-              ) : (
-                <div className="text-sm prose prose-invert prose-sm max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {msg.content}
-                  </ReactMarkdown>
+            <div className={`flex ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'} items-end space-x-2 space-x-reverse`}>
+              {msg.role === 'model' && (
+                <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 mb-1 ml-1">
+                   <Bot size={14} className="text-white" />
                 </div>
               )}
+              <div
+                className={`max-w-[260px] p-3.5 shadow-sm ${
+                  msg.role === 'user'
+                    ? 'bg-blue-600 text-white rounded-2xl rounded-tr-sm'
+                    : 'bg-white text-slate-700 rounded-2xl rounded-tl-sm border border-slate-200/60'
+                }`}
+              >
+                {msg.role === 'user' ? (
+                  <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
+                ) : (
+                  <div className="text-sm prose prose-slate prose-sm max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {msg.content}
+                    </ReactMarkdown>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         ))}
         {isTyping && (
-          <div className="flex items-start">
-            <div className="bg-white/10 p-3 rounded-2xl rounded-bl-sm border border-white/5 flex items-center space-x-2">
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" />
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
+          <div className="flex items-start ml-1 mt-2">
+            <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 mr-2">
+              <Bot size={14} className="text-white" />
+            </div>
+            <div className="bg-white p-3.5 rounded-2xl rounded-tl-sm border border-slate-200/60 shadow-sm flex items-center space-x-1.5">
+              <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" />
+              <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+              <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
             </div>
           </div>
         )}
@@ -265,51 +291,50 @@ export function ChatWidget() {
       </div>
 
       {/* Tool Chips (Quick Actions) */}
-      <div className="px-3 pb-2 pt-1 bg-white/5 border-t border-white/10 flex gap-2 overflow-x-auto custom-scrollbar whitespace-nowrap">
-        <button
-          onClick={() => setInput('Find the highest risk hotspot for Day 7')}
-          className="text-xs px-3 py-1.5 rounded-full bg-blue-500/20 text-blue-300 hover:bg-blue-500/40 transition-colors border border-blue-500/30"
-        >
-          🔍 Find Day 7 Hotspots
-        </button>
-        <button
-          onClick={() => {
-            if (viewState.latitude && viewState.longitude) {
-              setInput(`Why is it flagging a bust at ${viewState.latitude.toFixed(2)}N, ${viewState.longitude.toFixed(2)}E on Day ${leadTime}?`);
-            } else {
-              setInput(`Why is it flagging a bust here on Day ${leadTime}?`);
-            }
-          }}
-          className="text-xs px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/40 transition-colors border border-emerald-500/30"
-        >
-          🧠 Explain this region
-        </button>
-        <button
-          onClick={() => setInput('Show me the error magnitude layer instead of probability')}
-          className="text-xs px-3 py-1.5 rounded-full bg-purple-500/20 text-purple-300 hover:bg-purple-500/40 transition-colors border border-purple-500/30"
-        >
-          🗺️ Show Error Map
-        </button>
+      <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex flex-col gap-2">
+        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">Suggested Questions</p>
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => setInput('Find the highest risk hotspot for Day 7')}
+            className="text-sm px-4 py-2.5 rounded-xl bg-white text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-colors border border-slate-200 shadow-sm text-left font-medium flex items-center space-x-2"
+          >
+            <span>🔍</span>
+            <span>Find Day 7 Hotspots</span>
+          </button>
+          <button
+            onClick={() => {
+              if (viewState.latitude && viewState.longitude) {
+                setInput(`Why is it flagging a bust at ${viewState.latitude.toFixed(2)}N, ${viewState.longitude.toFixed(2)}E on Day ${leadTime}?`);
+              } else {
+                setInput(`Why is it flagging a bust here on Day ${leadTime}?`);
+              }
+            }}
+            className="text-sm px-4 py-2.5 rounded-xl bg-white text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-colors border border-slate-200 shadow-sm text-left font-medium flex items-center space-x-2"
+          >
+            <span>🧠</span>
+            <span>Explain this region</span>
+          </button>
+        </div>
       </div>
 
       {/* Input Area */}
-      <div className="p-3 bg-white/5">
-        <div className="flex items-end space-x-2 bg-black/30 p-2 rounded-xl border border-white/10 focus-within:border-blue-500/50 transition-colors">
+      <div className="p-4 bg-white border-t border-slate-100">
+        <div className="flex items-end space-x-3">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask AETHER..."
-            className="flex-1 bg-transparent border-none focus:ring-0 text-sm text-white resize-none max-h-32 min-h-[40px] py-2 px-2 custom-scrollbar outline-none"
+            placeholder="Type your message..."
+            className="flex-1 bg-slate-50 border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-sm text-slate-800 resize-none py-3 px-4 outline-none transition-all"
             rows={1}
             style={{
-              height: Math.min(120, Math.max(40, input.split('\n').length * 20 + 20)) + 'px'
+              height: Math.min(120, Math.max(44, input.split('\n').length * 20 + 24)) + 'px'
             }}
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || isTyping}
-            className="p-2 bg-blue-600 hover:bg-blue-500 disabled:bg-white/10 disabled:text-slate-500 text-white rounded-lg transition-colors flex-shrink-0"
+            className="p-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-100 disabled:text-slate-400 text-white rounded-xl shadow-sm transition-colors flex-shrink-0"
           >
             <Send size={18} />
           </button>

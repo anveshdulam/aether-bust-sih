@@ -51,6 +51,14 @@ AETHER-BUST frames the problem as an image-to-image translation task.
 | **XAI Attribution** | Integrated Gradients pinpoints the driving variables (e.g., humidity, wind). |
 | **AETHER Chatbot** | An AI Analyst (Gemini) that reads the current map state to answer meteorological questions. |
 
+## Keyboard Shortcuts
+| Key | Action |
+|---|---|
+| `Left Arrow` | Step backward in time (decrease lead time) |
+| `Right Arrow` | Step forward in time (increase lead time) |
+| `C` | Toggle Compare Mode (Baseline Error Overlay) |
+| `Escape` | Deselect region and close XAI attribution panel |
+
 ## Screenshots / GIFs
 *(To be added by team)*
 

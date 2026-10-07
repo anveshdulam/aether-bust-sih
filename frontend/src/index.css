@@ -4,8 +4,13 @@
 
 @layer base {
   html, body, #root { height: 100%; }
-  body { @apply bg-bg-base text-text-primary font-sans text-[13px] antialiased; font-variant-numeric: tabular-nums; }
-  :focus-visible { outline: 2px solid #2F81F7; outline-offset: 2px; }
+  body { 
+    background-color: #0e131a;
+    color: #e8ecf1;
+    @apply font-sans text-[13px] antialiased; 
+    font-variant-numeric: tabular-nums; 
+  }
+  :focus-visible { outline: 2px solid #4c9be8; outline-offset: 2px; }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }
   }

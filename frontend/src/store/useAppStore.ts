@@ -7,6 +7,8 @@ interface ViewState {
   zoom: number;
   pitch: number;
   bearing: number;
+  transitionDuration?: number;
+  transitionInterpolator?: any;
 }
 
 interface AppState {

@@ -12,21 +12,21 @@ export const VariableToggle = () => {
   ];
 
   return (
-    <div className="mb-6">
-      <div className="text-11 uppercase tracking-widest text-ink-dim mb-2 font-mono">Target Variable</div>
-      <div className="grid grid-cols-2 gap-1">
+    <div className="flex flex-col gap-2">
+      <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">Target Variable</div>
+      <div className="flex bg-bg-raised p-0.5 rounded border border-border">
         {options.map(opt => (
           <button
             key={opt.id}
             onClick={() => setVariable(opt.id)}
-            className={`px-3 py-2 border font-mono text-xs flex flex-col items-center transition-colors ${
+            className={`flex-1 flex flex-col items-center py-1.5 px-1 rounded-sm text-xs transition-colors ${
               variable === opt.id
-                ? 'bg-ink text-base border-ink'
-                : 'bg-transparent text-ink border-line hover:bg-inset'
+                ? 'bg-bg-panel text-text-primary shadow-sm'
+                : 'text-text-muted hover:text-text-primary hover:bg-bg-panel/50'
             }`}
           >
-            <span className="font-bold">{opt.id}</span>
-            <span className="text-11 mt-0.5 opacity-70">{opt.label}</span>
+            <span className="font-semibold">{opt.label}</span>
+            <span className="text-[10px] opacity-70 font-mono">{opt.id}</span>
           </button>
         ))}
       </div>
